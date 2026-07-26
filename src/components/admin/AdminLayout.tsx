@@ -11,7 +11,8 @@ import {
   Search,
   KeyRound,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -20,6 +21,7 @@ interface AdminLayoutProps {
   pendingOrdersCount: number;
   highRiskCount: number;
   onExitAdmin: () => void;
+  onLogout?: () => void;
   children: React.ReactNode;
 }
 
@@ -29,6 +31,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   pendingOrdersCount,
   highRiskCount,
   onExitAdmin,
+  onLogout,
   children,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -144,6 +147,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-slate-800/80 space-y-2">
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="w-full py-2.5 px-3 bg-[#3a1a1a] hover:bg-[#522424] text-rose-200 font-bold text-xs rounded-xl border border-rose-800/60 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+            >
+              <LogOut className="w-4 h-4 text-rose-400" />
+              <span>লগ আউট (Log Out)</span>
+            </button>
+          )}
           <button
             onClick={onExitAdmin}
             className="w-full py-2.5 px-3 bg-[#141a30] hover:bg-[#1c2442] text-slate-200 font-bold text-xs rounded-xl border border-slate-700/60 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"

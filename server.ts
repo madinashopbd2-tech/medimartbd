@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import {
   INITIAL_PRODUCT,
@@ -15,6 +16,7 @@ import { ProductData, StoreSettings, OrderData, ReviewData, FaqData, CouponData,
 
 // Derive __dirname safely for CJS/ESM compatibility
 const safeDirname = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
+const DATA_FILE = path.join(safeDirname, 'data_store.json');
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
@@ -28,6 +30,43 @@ let currentOrders: OrderData[] = [...INITIAL_SAMPLE_ORDERS];
 let currentBlacklist: BlacklistEntry[] = [
   { id: 'bl_1', phone: '01700000000', reason: 'Sequential fake number pattern', createdAt: new Date().toISOString() },
 ];
+
+function loadData() {
+  if (fs.existsSync(DATA_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+      if (data.product) currentProduct = data.product;
+      if (data.settings) currentSettings = { ...currentSettings, ...data.settings };
+      if (data.reviews) currentReviews = data.reviews;
+      if (data.faqs) currentFaqs = data.faqs;
+      if (data.coupons) currentCoupons = data.coupons;
+      if (data.orders) currentOrders = data.orders;
+      if (data.blacklist) currentBlacklist = data.blacklist;
+    } catch (err) {
+      console.error('Error reading data_store.json', err);
+    }
+  }
+}
+
+function saveData() {
+  const data = {
+    product: currentProduct,
+    settings: currentSettings,
+    reviews: currentReviews,
+    faqs: currentFaqs,
+    coupons: currentCoupons,
+    orders: currentOrders,
+    blacklist: currentBlacklist,
+  };
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error writing data_store.json', err);
+  }
+}
+
+// Load initial data
+loadData();
 
 async function startServer() {
   const app = express();
@@ -75,6 +114,7 @@ async function startServer() {
 
       if (result.success && result.order) {
         currentOrders.unshift(result.order);
+        saveData();
       }
 
       res.json(result);
@@ -118,6 +158,7 @@ async function startServer() {
         });
       }
 
+      saveData();
       res.json({ success: true, order: currentOrders[idx] });
     } else {
       res.status(404).json({ success: false, error: 'Order not found' });
@@ -127,12 +168,14 @@ async function startServer() {
   // Update Product Details from CMS
   app.post('/api/product', (req, res) => {
     currentProduct = { ...currentProduct, ...req.body };
+    saveData();
     res.json({ success: true, product: currentProduct });
   });
 
   // Update Store Settings from CMS
   app.post('/api/settings', (req, res) => {
     currentSettings = { ...currentSettings, ...req.body };
+    saveData();
     res.json({ success: true, settings: currentSettings });
   });
 
@@ -146,12 +189,14 @@ async function startServer() {
       createdAt: new Date().toISOString(),
     };
     currentBlacklist.unshift(newEntry);
+    saveData();
     res.json({ success: true, blacklist: currentBlacklist });
   });
 
   app.delete('/api/blacklist/:id', (req, res) => {
     const { id } = req.params;
     currentBlacklist = currentBlacklist.filter((b) => b.id !== id);
+    saveData();
     res.json({ success: true, blacklist: currentBlacklist });
   });
 
@@ -159,6 +204,7 @@ async function startServer() {
   app.post('/api/reviews', (req, res) => {
     const newRev = req.body;
     currentReviews.unshift(newRev);
+    saveData();
     res.json({ success: true, reviews: currentReviews });
   });
 
@@ -174,13 +220,28 @@ async function startServer() {
       isActive: true,
     };
     currentCoupons.unshift(newCoupon);
+    saveData();
     res.json({ success: true, coupons: currentCoupons });
   });
 
   app.delete('/api/coupons/:id', (req, res) => {
     const { id } = req.params;
     currentCoupons = currentCoupons.filter((c) => c.id !== id);
+    saveData();
     res.json({ success: true, coupons: currentCoupons });
+  });
+
+  // Admin Login
+  app.post('/api/admin/login', (req, res) => {
+    const { username, password } = req.body;
+    if (
+      username === currentSettings.adminUsername &&
+      password === currentSettings.adminPassword
+    ) {
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ success: false, error: 'ভুল ইউজারনেম বা পাসওয়ার্ড' });
+    }
   });
 
   // Vite Middleware for Development vs Static for Production

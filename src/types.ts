@@ -157,6 +157,8 @@ export interface StoreSettings {
   footerTrustBadgeTitle?: string;
   footerTrustBadgeDesc?: string;
 
+  adminUsername?: string;
+  adminPassword?: string;
   sectionOrder: string[]; // array of section IDs e.g. ['hero', 'media', 'scarcity', ...]
   sectionVisibility: Record<string, boolean>; // e.g. { hero: true, scarcity: true }
 }

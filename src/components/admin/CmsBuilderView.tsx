@@ -53,7 +53,7 @@ export const CmsBuilderView: React.FC<CmsBuilderViewProps> = ({
   onSaveProduct,
   onSaveSettings,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'content' | 'media' | 'benefits' | 'footer' | 'theme' | 'sections' | 'code'>('content');
+  const [activeSubTab, setActiveSubTab] = useState<'content' | 'media' | 'benefits' | 'specs' | 'howToUse' | 'bundles' | 'footer' | 'theme' | 'sections' | 'code'>('content');
   const [viewportMode, setViewportMode] = useState<'desktop' | 'mobile'>('desktop');
 
   // Local editable states
@@ -114,6 +114,9 @@ export const CmsBuilderView: React.FC<CmsBuilderViewProps> = ({
             { id: 'content', label: 'প্রোডাক্ট কন্টেন্ট' },
             { id: 'media', label: '📸 ছবি ও ভিডিও লিংক' },
             { id: 'benefits', label: '✨ প্রোডাক্ট এর উপকারিতা' },
+            { id: 'specs', label: '⚙️ টেকনিক্যাল স্পেসিফিকেশন' },
+            { id: 'howToUse', label: '🛠️ ব্যবহার বিধি (How To Use)' },
+            { id: 'bundles', label: '📦 প্যাক সাইজ ও অফার' },
             { id: 'footer', label: '🦶 ফুটার সেকশন এডিটর' },
             { id: 'theme', label: 'কালার ও থিম প্রেসট' },
             { id: 'sections', label: 'সেকশন লেআউট ও অর্ডার' },
@@ -510,188 +513,9 @@ export const CmsBuilderView: React.FC<CmsBuilderViewProps> = ({
                   </div>
                 </div>
 
-                {/* 5. Specifications Table Editor */}
-                <div className="bg-[#121215] p-4 rounded-xl border border-[#27272a] space-y-3">
-                  <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                    ৫. স্পেসিফিকেশন টেবিল (Technical Specs)
-                  </h4>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1">স্পেক্স সেকশন ব্যাজ</label>
-                      <input
-                        type="text"
-                        value={productForm.specsSectionBadge || ''}
-                        onChange={(e) => setProductForm({ ...productForm, specsSectionBadge: e.target.value })}
-                        placeholder="স্পেসিফিকেশন"
-                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white outline-none focus:border-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1">স্পেক্স সেকশন হেডিং</label>
-                      <input
-                        type="text"
-                        value={productForm.specsSectionTitle || ''}
-                        onChange={(e) => setProductForm({ ...productForm, specsSectionTitle: e.target.value })}
-                        placeholder="প্রোডাক্টের টেকনিক্যাল তথ্যসমূহ"
-                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white font-bold outline-none focus:border-amber-500"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Specs List */}
-                  <div className="space-y-2 pt-2">
-                    <div className="flex justify-between items-center">
-                      <label className="block text-xs font-bold text-zinc-300">স্পেক্স টেবিল তথ্য ({productForm.specifications.length})</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updatedSpecs = [
-                            ...productForm.specifications,
-                            { key: 'নতুন বৈশিষ্ট্য', value: 'মান / বিবরণ' },
-                          ];
-                          setProductForm({ ...productForm, specifications: updatedSpecs });
-                        }}
-                        className="px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[11px] rounded-lg hover:bg-amber-500/30 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> স্পেক্স যোগ করুন
-                      </button>
-                    </div>
 
-                    <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                      {productForm.specifications.map((spec, sIdx) => (
-                        <div key={sIdx} className="flex items-center gap-2 bg-[#09090b] p-2 rounded-xl border border-[#27272a]">
-                          <input
-                            type="text"
-                            value={spec.key}
-                            onChange={(e) => {
-                              const newSpecs = [...productForm.specifications];
-                              newSpecs[sIdx].key = e.target.value;
-                              setProductForm({ ...productForm, specifications: newSpecs });
-                            }}
-                            placeholder="বৈশিষ্ট্য (যেমন: ব্যাটারি)"
-                            className="w-1/2 px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs font-bold text-white outline-none focus:border-amber-500"
-                          />
-                          <input
-                            type="text"
-                            value={spec.value}
-                            onChange={(e) => {
-                              const newSpecs = [...productForm.specifications];
-                              newSpecs[sIdx].value = e.target.value;
-                              setProductForm({ ...productForm, specifications: newSpecs });
-                            }}
-                            placeholder="মান (যেমন: 280mAh)"
-                            className="w-1/2 px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs text-zinc-300 outline-none focus:border-amber-500"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newSpecs = productForm.specifications.filter((_, i) => i !== sIdx);
-                              setProductForm({ ...productForm, specifications: newSpecs });
-                            }}
-                            className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer shrink-0"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 6. How To Use Steps Editor */}
-                <div className="bg-[#121215] p-4 rounded-xl border border-[#27272a] space-y-3">
-                  <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider">
-                    ৬. ব্যবহার করার নিয়ম (How To Use Steps)
-                  </h4>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1">স্টেপস সেকশন ব্যাজ</label>
-                      <input
-                        type="text"
-                        value={productForm.howToUseSectionBadge || ''}
-                        onChange={(e) => setProductForm({ ...productForm, howToUseSectionBadge: e.target.value })}
-                        placeholder="সহজ ৩ ধাপ"
-                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white outline-none focus:border-purple-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1">স্টেপস সেকশন হেডিং</label>
-                      <input
-                        type="text"
-                        value={productForm.howToUseSectionTitle || ''}
-                        onChange={(e) => setProductForm({ ...productForm, howToUseSectionTitle: e.target.value })}
-                        placeholder="স্মার্টওয়াচটি যেভাবে ব্যবহার করবেন"
-                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white font-bold outline-none focus:border-purple-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Steps List */}
-                  <div className="space-y-2 pt-2">
-                    <div className="flex justify-between items-center">
-                      <label className="block text-xs font-bold text-zinc-300">ব্যবহার বিধি ধাপসমূহ ({productForm.howToUseSteps.length})</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updatedSteps = [
-                            ...productForm.howToUseSteps,
-                            { step: productForm.howToUseSteps.length + 1, title: 'নতুন ধাপ টাইটেল', desc: 'ধাপের বিস্তারিত বিবরণ' },
-                          ];
-                          setProductForm({ ...productForm, howToUseSteps: updatedSteps });
-                        }}
-                        className="px-2.5 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold text-[11px] rounded-lg hover:bg-purple-500/30 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> ধাপ যোগ করুন
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                      {productForm.howToUseSteps.map((st, stIdx) => (
-                        <div key={stIdx} className="p-3 bg-[#09090b] rounded-xl border border-[#27272a] space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                              ধাপ {st.step}
-                            </span>
-                            <input
-                              type="text"
-                              value={st.title}
-                              onChange={(e) => {
-                                const newSteps = [...productForm.howToUseSteps];
-                                newSteps[stIdx].title = e.target.value;
-                                setProductForm({ ...productForm, howToUseSteps: newSteps });
-                              }}
-                              placeholder="ধাপের টাইটেল"
-                              className="flex-1 px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs font-bold text-white outline-none focus:border-purple-500"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newSteps = productForm.howToUseSteps.filter((_, i) => i !== stIdx);
-                                setProductForm({ ...productForm, howToUseSteps: newSteps });
-                              }}
-                              className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer shrink-0"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <input
-                            type="text"
-                            value={st.desc}
-                            onChange={(e) => {
-                              const newSteps = [...productForm.howToUseSteps];
-                              newSteps[stIdx].desc = e.target.value;
-                              setProductForm({ ...productForm, howToUseSteps: newSteps });
-                            }}
-                            placeholder="ধাপের বিবরণ"
-                            className="w-full px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs text-zinc-300 outline-none focus:border-purple-500"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
 
                 {/* 7. Checkout Form Texts */}
                 <div className="bg-[#121215] p-4 rounded-xl border border-[#27272a] space-y-3">
@@ -1200,6 +1024,303 @@ export const CmsBuilderView: React.FC<CmsBuilderViewProps> = ({
                             placeholder="উপকারিতার বিস্তারিত তথ্য লিখুন..."
                             className="w-full px-3 py-2 bg-[#121215] rounded-xl border border-[#27272a] text-xs text-zinc-300 outline-none focus:border-emerald-500"
                           />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSubTab === 'specs' && (
+              <div className="space-y-6">
+                <div className="border-b border-[#27272a] pb-3 flex justify-between items-center">
+                  <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
+                    ⚙️ টেকনিক্যাল স্পেসিফিকেশন এডিটর
+                  </h3>
+                </div>
+                {/* 5. Specifications Table Editor */}
+                <div className="bg-[#121215] p-4 rounded-xl border border-[#27272a] space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 mb-1">স্পেক্স সেকশন ব্যাজ</label>
+                      <input
+                        type="text"
+                        value={productForm.specsSectionBadge || ''}
+                        onChange={(e) => setProductForm({ ...productForm, specsSectionBadge: e.target.value })}
+                        placeholder="স্পেসিফিকেশন"
+                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 mb-1">স্পেক্স সেকশন হেডিং</label>
+                      <input
+                        type="text"
+                        value={productForm.specsSectionTitle || ''}
+                        onChange={(e) => setProductForm({ ...productForm, specsSectionTitle: e.target.value })}
+                        placeholder="প্রোডাক্টের টেকনিক্যাল তথ্যসমূহ"
+                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white font-bold outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Specs List */}
+                  <div className="space-y-2 pt-2">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-bold text-zinc-300">স্পেক্স টেবিল তথ্য ({productForm.specifications.length})</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedSpecs = [
+                            ...productForm.specifications,
+                            { key: 'নতুন বৈশিষ্ট্য', value: 'মান / বিবরণ' },
+                          ];
+                          setProductForm({ ...productForm, specifications: updatedSpecs });
+                        }}
+                        className="px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[11px] rounded-lg hover:bg-amber-500/30 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> স্পেক্স যোগ করুন
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 overflow-y-auto pr-1">
+                      {productForm.specifications.map((spec, sIdx) => (
+                        <div key={sIdx} className="flex items-center gap-2 bg-[#09090b] p-2 rounded-xl border border-[#27272a]">
+                          <input
+                            type="text"
+                            value={spec.key}
+                            onChange={(e) => {
+                              const newSpecs = [...productForm.specifications];
+                              newSpecs[sIdx].key = e.target.value;
+                              setProductForm({ ...productForm, specifications: newSpecs });
+                            }}
+                            placeholder="বৈশিষ্ট্য (যেমন: ব্যাটারি)"
+                            className="w-1/2 px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs font-bold text-white outline-none focus:border-amber-500"
+                          />
+                          <input
+                            type="text"
+                            value={spec.value}
+                            onChange={(e) => {
+                              const newSpecs = [...productForm.specifications];
+                              newSpecs[sIdx].value = e.target.value;
+                              setProductForm({ ...productForm, specifications: newSpecs });
+                            }}
+                            placeholder="মান (যেমন: 280mAh)"
+                            className="w-1/2 px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs text-zinc-300 outline-none focus:border-amber-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newSpecs = productForm.specifications.filter((_, i) => i !== sIdx);
+                              setProductForm({ ...productForm, specifications: newSpecs });
+                            }}
+                            className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSubTab === 'howToUse' && (
+              <div className="space-y-6">
+                <div className="border-b border-[#27272a] pb-3 flex justify-between items-center">
+                  <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
+                    🛠️ ব্যবহার বিধি (How To Use)
+                  </h3>
+                </div>
+
+                {/* How To Use Steps Editor */}
+                <div className="bg-[#121215] p-4 rounded-xl border border-[#27272a] space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 mb-1">স্টেপস সেকশন ব্যাজ</label>
+                      <input
+                        type="text"
+                        value={productForm.howToUseSectionBadge || ''}
+                        onChange={(e) => setProductForm({ ...productForm, howToUseSectionBadge: e.target.value })}
+                        placeholder="সহজ ৩ ধাপ"
+                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 mb-1">স্টেপস সেকশন হেডিং</label>
+                      <input
+                        type="text"
+                        value={productForm.howToUseSectionTitle || ''}
+                        onChange={(e) => setProductForm({ ...productForm, howToUseSectionTitle: e.target.value })}
+                        placeholder="স্মার্টওয়াচটি যেভাবে ব্যবহার করবেন"
+                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white font-bold outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Steps List */}
+                  <div className="space-y-2 pt-2">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-bold text-zinc-300">ব্যবহার বিধি ধাপসমূহ ({productForm.howToUseSteps.length})</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedSteps = [
+                            ...productForm.howToUseSteps,
+                            { step: productForm.howToUseSteps.length + 1, title: 'নতুন ধাপ টাইটেল', desc: 'ধাপের বিস্তারিত বিবরণ' },
+                          ];
+                          setProductForm({ ...productForm, howToUseSteps: updatedSteps });
+                        }}
+                        className="px-2.5 py-1 bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold text-[11px] rounded-lg hover:bg-purple-500/30 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> ধাপ যোগ করুন
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                      {productForm.howToUseSteps.map((st, stIdx) => (
+                        <div key={stIdx} className="p-3 bg-[#09090b] rounded-xl border border-[#27272a] space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                              ধাপ {st.step}
+                            </span>
+                            <input
+                              type="text"
+                              value={st.title}
+                              onChange={(e) => {
+                                const newSteps = [...productForm.howToUseSteps];
+                                newSteps[stIdx].title = e.target.value;
+                                setProductForm({ ...productForm, howToUseSteps: newSteps });
+                              }}
+                              placeholder="ধাপের টাইটেল"
+                              className="flex-1 px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs font-bold text-white outline-none focus:border-purple-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newSteps = productForm.howToUseSteps.filter((_, i) => i !== stIdx);
+                                setProductForm({ ...productForm, howToUseSteps: newSteps });
+                              }}
+                              className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={st.desc}
+                            onChange={(e) => {
+                              const newSteps = [...productForm.howToUseSteps];
+                              newSteps[stIdx].desc = e.target.value;
+                              setProductForm({ ...productForm, howToUseSteps: newSteps });
+                            }}
+                            placeholder="ধাপের বিবরণ"
+                            className="w-full px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs text-zinc-300 outline-none focus:border-purple-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSubTab === 'bundles' && (
+              <div className="space-y-6">
+                <div className="border-b border-[#27272a] pb-3 flex justify-between items-center">
+                  <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
+                    📦 প্যাক সাইজ ও অফার এডিটর
+                  </h3>
+                </div>
+
+                <div className="bg-[#121215] p-4 rounded-xl border border-[#27272a] space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-xs font-bold text-zinc-300">প্যাকেজ সমূহ ({productForm.bundles?.length || 0})</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updatedBundles = [
+                          ...(productForm.bundles || []),
+                          { quantity: 1, title: 'নতুন প্যাক', savingsText: 'অফার', pricePerUnit: 1000 },
+                        ];
+                        setProductForm({ ...productForm, bundles: updatedBundles });
+                      }}
+                      className="px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[11px] rounded-lg hover:bg-amber-500/30 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> প্যাক যোগ করুন
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                    {(productForm.bundles || []).map((bundle, bIdx) => (
+                      <div key={bIdx} className="p-3 bg-[#09090b] rounded-xl border border-[#27272a] space-y-3 relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newBundles = productForm.bundles?.filter((_, i) => i !== bIdx);
+                            setProductForm({ ...productForm, bundles: newBundles });
+                          }}
+                          className="absolute top-2 right-2 p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        
+                        <div className="grid grid-cols-2 gap-3 pr-8">
+                          <div>
+                            <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-wider">প্যাক টাইটেল</label>
+                            <input
+                              type="text"
+                              value={bundle.title}
+                              onChange={(e) => {
+                                const newBundles = [...(productForm.bundles || [])];
+                                newBundles[bIdx].title = e.target.value;
+                                setProductForm({ ...productForm, bundles: newBundles });
+                              }}
+                              placeholder="যেমন: ১ টি পিস"
+                              className="w-full px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs font-bold text-white outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-wider">পরিমাণ (Quantity)</label>
+                            <input
+                              type="number"
+                              value={bundle.quantity}
+                              onChange={(e) => {
+                                const newBundles = [...(productForm.bundles || [])];
+                                newBundles[bIdx].quantity = Number(e.target.value);
+                                setProductForm({ ...productForm, bundles: newBundles });
+                              }}
+                              className="w-full px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs font-mono text-zinc-300 outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-wider">সেভিংস টেক্সট / অফার</label>
+                            <input
+                              type="text"
+                              value={bundle.savingsText}
+                              onChange={(e) => {
+                                const newBundles = [...(productForm.bundles || [])];
+                                newBundles[bIdx].savingsText = e.target.value;
+                                setProductForm({ ...productForm, bundles: newBundles });
+                              }}
+                              placeholder="যেমন: নিয়মিত প্রাইস"
+                              className="w-full px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs font-bold text-emerald-400 outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-wider">প্রতি পিস দাম (৳)</label>
+                            <input
+                              type="number"
+                              value={bundle.pricePerUnit}
+                              onChange={(e) => {
+                                const newBundles = [...(productForm.bundles || [])];
+                                newBundles[bIdx].pricePerUnit = Number(e.target.value);
+                                setProductForm({ ...productForm, bundles: newBundles });
+                              }}
+                              className="w-full px-2.5 py-1.5 bg-[#121215] rounded-lg border border-[#27272a] text-xs font-mono text-zinc-300 outline-none focus:border-amber-500"
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}

@@ -49,6 +49,7 @@ import { OrderManagementView } from './components/admin/OrderManagementView';
 import { CustomerBlacklistView } from './components/admin/CustomerBlacklistView';
 import { MarketingPixelView } from './components/admin/MarketingPixelView';
 import { SettingsView } from './components/admin/SettingsView';
+import { LoginView } from './components/admin/LoginView';
 
 export default function App() {
   // Navigation Mode: 'storefront' vs 'admin' based on URL path (/admin)
@@ -64,6 +65,7 @@ export default function App() {
   });
 
   const [adminTab, setAdminTab] = useState<'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings'>('dashboard');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // URL route sync effect
   useEffect(() => {
@@ -351,12 +353,16 @@ export default function App() {
     <div className="min-h-screen font-sans antialiased text-slate-900 bg-white">
       {/* Render Mode Switcher */}
       {viewMode === 'admin' ? (
+        !isAuthenticated ? (
+          <LoginView onLoginSuccess={() => setIsAuthenticated(true)} />
+        ) : (
         <AdminLayout
           activeTab={adminTab}
           setActiveTab={setAdminTab}
           pendingOrdersCount={pendingCount}
           highRiskCount={highRiskCount}
           onExitAdmin={handleExitAdmin}
+          onLogout={() => setIsAuthenticated(false)}
         >
           {adminTab === 'dashboard' && (
             <DashboardView orders={orders} onViewOrders={() => setAdminTab('orders')} />
@@ -399,6 +405,7 @@ export default function App() {
             />
           )}
         </AdminLayout>
+        )
       ) : (
         /* Customer Facing Dynamic Landing Page */
         <main className="pb-16 lg:pb-0">

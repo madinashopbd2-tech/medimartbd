@@ -72,6 +72,54 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Password & Security */}
+      <form onSubmit={handleSave} className="bg-[#09090b] p-6 rounded-2xl border border-[#27272a] space-y-4">
+        <div className="flex justify-between items-center border-b border-[#27272a] pb-4">
+          <div>
+            <h3 className="font-extrabold text-white text-base flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-rose-400" />
+              পাসওয়ার্ড ও সিকিউরিটি
+            </h3>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              এডমিন প্যানেলে লগইন করার ইউজারনেম এবং পাসওয়ার্ড পরিবর্তন করুন।
+            </p>
+          </div>
+          {isSaved && (
+            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1 font-mono">
+              <CheckCircle2 className="w-3.5 h-3.5" /> সেভ হয়েছে
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 mb-1">ইউজারনেম</label>
+            <input
+              type="text"
+              required
+              value={form.adminUsername || ''}
+              onChange={(e) => setForm({ ...form, adminUsername: e.target.value })}
+              className="w-full px-3.5 py-2 bg-[#121215] border border-[#27272a] text-white rounded-xl font-mono text-xs outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 mb-1">নতুন পাসওয়ার্ড</label>
+            <input
+              type="text"
+              required
+              value={form.adminPassword || ''}
+              onChange={(e) => setForm({ ...form, adminPassword: e.target.value })}
+              className="w-full px-3.5 py-2 bg-[#121215] border border-[#27272a] text-white rounded-xl font-mono text-xs outline-none focus:border-emerald-500"
+            />
+          </div>
+        </div>
+        <button
+          type="submit"
+          className="px-6 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(244,63,94,0.15)] cursor-pointer transition-all"
+        >
+          সিকিউরিটি আপডেট করুন
+        </button>
+      </form>
+
       {/* System & Courier API Settings */}
       <form onSubmit={handleSave} className="bg-[#09090b] p-6 rounded-2xl border border-[#27272a] space-y-6">
         <div className="flex justify-between items-center border-b border-[#27272a] pb-4">

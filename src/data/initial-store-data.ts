@@ -63,6 +63,8 @@ export const INITIAL_PRODUCT: ProductData = {
 };
 
 export const INITIAL_SETTINGS: StoreSettings = {
+  adminUsername: 'admin',
+  adminPassword: 'Shakil123',
   siteTitle: 'Medimart BD | প্রমোশনাল অফার ও ক্যাশ অন ডেলিভারি',
   logoUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=100&q=80',
   primaryColor: '#059669', // Emerald 600
