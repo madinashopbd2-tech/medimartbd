@@ -27,7 +27,7 @@ const getEmbedInfo = (url?: string) => {
   if (youtubeId) {
     return {
       isDirectMp4: false,
-      embedUrl: `https://www.youtube.com/embed/${youtubeId}?rel=0&autoplay=0&controls=1`,
+      embedUrl: `https://www.youtube.com/embed/${youtubeId}?rel=0&autoplay=1&mute=1&controls=1`,
     };
   }
   return { isDirectMp4: false, embedUrl: trimmed };
@@ -58,12 +58,12 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
           {/* Main Selected Image */}
           <div className="md:col-span-7 space-y-4">
-            <div className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-md aspect-square relative group">
+            <div className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-200 shadow-md relative group flex items-center justify-center min-h-[300px]">
               <img
                 src={activeImage}
                 alt={product.title}
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                className="w-full h-auto max-h-[700px] object-contain group-hover:scale-105 transition-transform duration-300"
               />
 
               {/* Video Badge Button Overlay */}
@@ -142,8 +142,10 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
                     <video
                       src={videoInfo.embedUrl}
                       controls
+                      autoPlay
+                      muted
+                      loop
                       playsInline
-                      preload="metadata"
                       className="w-full h-full object-cover"
                       poster={product.images[0]}
                     />

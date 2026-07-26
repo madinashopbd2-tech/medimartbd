@@ -108,7 +108,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   src={product.images[0] || 'https://picsum.photos/600/600'}
                   alt={product.title}
                   referrerPolicy="no-referrer"
-                  className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-auto max-h-[600px] object-contain bg-black/20 group-hover:scale-105 transition-transform duration-500"
                 />
 
                 {/* Stock Tag Overlay */}
