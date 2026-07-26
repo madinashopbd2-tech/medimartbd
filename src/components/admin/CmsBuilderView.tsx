@@ -789,6 +789,8 @@ export const CmsBuilderView: React.FC<CmsBuilderViewProps> = ({
                                   ? `https://www.youtube.com/embed/${productForm.videoUrl.split('youtu.be/')[1]?.split('?')[0]}?rel=0`
                                   : productForm.videoUrl.includes('watch?v=')
                                   ? `https://www.youtube.com/embed/${productForm.videoUrl.split('watch?v=')[1]?.split('&')[0]}?rel=0`
+                                  : productForm.videoUrl.includes('youtube.com/shorts/')
+                                  ? `https://www.youtube.com/embed/${productForm.videoUrl.split('youtube.com/shorts/')[1]?.split('?')[0]}?rel=0`
                                   : productForm.videoUrl
                               }
                               title="Video Preview"

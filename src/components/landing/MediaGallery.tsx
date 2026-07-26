@@ -16,10 +16,12 @@ const getEmbedInfo = (url?: string) => {
   if (trimmed.includes('youtu.be/')) {
     youtubeId = trimmed.split('youtu.be/')[1]?.split('?')[0]?.split('&')[0] || '';
   } else if (trimmed.includes('youtube.com/watch')) {
-    const urlParams = new URLSearchParams(trimmed.split('?')[1]);
+    const urlParams = new URLSearchParams(trimmed.split('?')[1] || '');
     youtubeId = urlParams.get('v') || '';
   } else if (trimmed.includes('youtube.com/embed/')) {
     youtubeId = trimmed.split('youtube.com/embed/')[1]?.split('?')[0]?.split('&')[0] || '';
+  } else if (trimmed.includes('youtube.com/shorts/')) {
+    youtubeId = trimmed.split('youtube.com/shorts/')[1]?.split('?')[0]?.split('&')[0] || '';
   }
 
   if (youtubeId) {
