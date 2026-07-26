@@ -12,12 +12,13 @@ import {
   KeyRound,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Star
 } from 'lucide-react';
 
 interface AdminLayoutProps {
-  activeTab: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings';
-  setActiveTab: (tab: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings') => void;
+  activeTab: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings' | 'reviews';
+  setActiveTab: (tab: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings' | 'reviews') => void;
   pendingOrdersCount: number;
   highRiskCount: number;
   onExitAdmin: () => void;
@@ -37,7 +38,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   interface NavItem {
-    id: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings';
+    id: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings' | 'reviews';
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     badge?: string | number | null;
@@ -54,6 +55,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       badgeColor: 'bg-indigo-600 text-white'
     },
     { id: 'cms', label: 'পেজ বিল্ডার (CMS)', icon: Palette },
+    { id: 'reviews', label: 'রিভিউ ম্যানেজমেন্ট', icon: Star },
     { 
       id: 'customers', 
       label: 'কাস্টমার ও ফ্রড ব্লক', 

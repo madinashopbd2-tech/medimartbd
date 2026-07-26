@@ -50,6 +50,7 @@ import { CustomerBlacklistView } from './components/admin/CustomerBlacklistView'
 import { MarketingPixelView } from './components/admin/MarketingPixelView';
 import { SettingsView } from './components/admin/SettingsView';
 import { LoginView } from './components/admin/LoginView';
+import { ReviewManagementView } from './components/admin/ReviewManagementView';
 
 export default function App() {
   // Navigation Mode: 'storefront' vs 'admin' based on URL path (/admin)
@@ -64,7 +65,7 @@ export default function App() {
     return 'storefront';
   });
 
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings' | 'reviews'>('dashboard');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // URL route sync effect
@@ -136,6 +137,12 @@ export default function App() {
   useEffect(() => {
     fetchStoreData();
   }, []);
+
+  useEffect(() => {
+    if (settings?.siteTitle) {
+      document.title = settings.siteTitle;
+    }
+  }, [settings?.siteTitle]);
 
   // Initialize Tracking Scripts (Meta Pixel, TikTok Pixel, GA4, GTM, Domain Verification) & Scroll Depth Tracking
   useEffect(() => {
@@ -274,6 +281,22 @@ export default function App() {
     });
   };
 
+  const handleUpdateReview = async (rev: ReviewData) => {
+    setReviews((prev) => prev.map((r) => (r.id === rev.id ? rev : r)));
+    await fetch(`/api/reviews/${rev.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rev),
+    });
+  };
+
+  const handleDeleteReview = async (id: string) => {
+    setReviews((prev) => prev.filter((r) => r.id !== id));
+    await fetch(`/api/reviews/${id}`, {
+      method: 'DELETE',
+    });
+  };
+
   // Coupon Actions
   const handleAddCoupon = async (code: string, discountValue: number) => {
     const res = await fetch('/api/coupons', {
@@ -380,6 +403,13 @@ export default function App() {
               orders={orders}
               onUpdateOrderStatus={handleUpdateOrderStatus}
               onBlacklistCustomer={handleAddBlacklist}
+            />
+          )}
+          {adminTab === 'reviews' && (
+            <ReviewManagementView
+              reviews={reviews}
+              onUpdateReview={handleUpdateReview}
+              onDeleteReview={handleDeleteReview}
             />
           )}
           {adminTab === 'customers' && (

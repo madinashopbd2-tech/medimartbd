@@ -208,6 +208,27 @@ async function startServer() {
     res.json({ success: true, reviews: currentReviews });
   });
 
+  // Edit Review
+  app.put('/api/reviews/:id', (req, res) => {
+    const { id } = req.params;
+    const idx = currentReviews.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      currentReviews[idx] = { ...currentReviews[idx], ...req.body };
+      saveData();
+      res.json({ success: true, reviews: currentReviews });
+    } else {
+      res.status(404).json({ success: false, error: 'Review not found' });
+    }
+  });
+
+  // Delete Review
+  app.delete('/api/reviews/:id', (req, res) => {
+    const { id } = req.params;
+    currentReviews = currentReviews.filter((r) => r.id !== id);
+    saveData();
+    res.json({ success: true, reviews: currentReviews });
+  });
+
   // Manage Coupons
   app.post('/api/coupons', (req, res) => {
     const { code, discountValue } = req.body;
