@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import {
   INITIAL_PRODUCT,
@@ -14,16 +13,8 @@ import { createOrderAction } from './src/app/actions/order-actions';
 import { dispatchAllServerMarketingEvents, marketingLogsMemory } from './src/lib/marketing/server-capi';
 import { ProductData, StoreSettings, OrderData, ReviewData, FaqData, CouponData, BlacklistEntry } from './src/types';
 
-// Derive __dirname for ESM or CJS context safely
-const getDirname = () => {
-  if (typeof __dirname !== 'undefined') return __dirname;
-  try {
-    return path.dirname(fileURLToPath(import.meta.url));
-  } catch {
-    return process.cwd();
-  }
-};
-const safeDirname = getDirname();
+// Derive __dirname safely for CJS/ESM compatibility
+const safeDirname = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
