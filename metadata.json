@@ -1,0 +1,6 @@
+{
+  "name": "Medimart BD",
+  "description": "Single product landing page CMS for Medimart BD with COD checkout form, Bangladesh districts & upazilas, anti-fraud risk scoring, marketing pixel CAPI event deduplication, and admin panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

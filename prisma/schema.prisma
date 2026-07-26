@@ -1,0 +1,181 @@
+// Prisma Schema for Single Product COD Landing Page & Admin CMS
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id               String      @id @default(uuid())
+  title            String
+  subtitle         String?
+  regularPrice     Float
+  offerPrice       Float
+  deliveryInside   Float       @default(70)
+  deliveryOutside  Float       @default(130)
+  stockQuantity    Int         @default(100)
+  isStockActive    Boolean     @default(true)
+  sku              String      @default("COD-PROD-01")
+  description      String?     @db.Text
+  images           String      @db.Text // JSON string array of image URLs
+  videoUrl         String?
+  features         String      @db.Text // JSON string of benefit points
+  specifications   String      @db.Text // JSON string of spec key-values
+  howToUseSteps    String      @db.Text // JSON string of steps
+  countdownEndDate DateTime?
+  orders           Order[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  orderNumber     String      @unique // e.g. COD-10024
+  customerName    String
+  phone           String
+  address         String      @db.Text
+  district        String
+  upazila         String
+  quantity        Int         @default(1)
+  unitPrice       Float
+  deliveryFee     Float
+  discountAmount  Float       @default(0)
+  totalAmount     Float
+  paymentMethod   String      @default("COD")
+  status          OrderStatus @default(PENDING)
+  riskLevel       RiskLevel   @default(LOW)
+  riskScore       Int         @default(0)
+  riskReasons     String?     @db.Text // JSON array of reasons
+  orderNote       String?     @db.Text
+  ipAddress       String?
+  userAgent       String?
+  eventId         String      @unique // Deterministic event_id for Meta CAPI deduplication
+  courierName     String?     // STEADFAST or PATHAO
+  courierTracking String?
+  isOtpVerified   Boolean     @default(false)
+  productId       String
+  product         Product     @relation(fields: [productId], references: [id])
+  customerId      String?
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([phone])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Customer {
+  id                 String      @id @default(uuid())
+  phone              String      @unique
+  name               String
+  address            String?     @db.Text
+  district           String?
+  ordersCount        Int         @default(0)
+  totalSpent         Float       @default(0)
+  cancelledCount     Int         @default(0)
+  isBlacklisted      Boolean     @default(false)
+  blacklistReason    String?
+  courierSuccessRate Float?      // Historical success rate from Steadfast/Pathao check
+  orders             Order[]
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  authorName String
+  rating     Int      @default(5)
+  comment    String   @db.Text
+  location   String?  @default("Dhaka")
+  isVerified Boolean  @default(true)
+  photoUrl   String?
+  isApproved Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+model FAQ {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String   @db.Text
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+}
+
+model Setting {
+  id                   String   @id @default("default")
+  siteTitle            String   @default("Premium BD COD Store")
+  logoUrl              String?
+  primaryColor         String   @default("#059669") // Emerald primary
+  accentColor          String   @default("#d97706") // Amber accent
+  deliveryFeeInside    Float    @default(70)
+  deliveryFeeOutside   Float    @default(130)
+  metaPixelId          String?
+  metaCapiToken        String?
+  tikTokPixelId        String?
+  gaMeasurementId      String?
+  telegramBotToken     String?
+  telegramChatId       String?
+  steadfastApiKey      String?
+  steadfastSecretKey   String?
+  pathaoStoreId        String?
+  pathaoToken          String?
+  customCss            String?  @db.Text
+  customJs             String?  @db.Text
+  sectionOrder         String   @db.Text // JSON string array of section keys
+  sectionVisibility    String   @db.Text // JSON string object of key-boolean map
+  updatedAt            DateTime @updatedAt
+}
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  discountType  String    @default("FIXED") // FIXED or PERCENTAGE
+  discountValue Float
+  minOrderValue Float     @default(0)
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model Blacklist {
+  id        String   @id @default(uuid())
+  phone     String?  @unique
+  ipAddress String?  @unique
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  action    String
+  details   String   @db.Text
+  createdAt DateTime @default(now())
+}
