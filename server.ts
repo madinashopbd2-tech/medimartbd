@@ -14,9 +14,16 @@ import { createOrderAction } from './src/app/actions/order-actions';
 import { dispatchAllServerMarketingEvents, marketingLogsMemory } from './src/lib/marketing/server-capi';
 import { ProductData, StoreSettings, OrderData, ReviewData, FaqData, CouponData, BlacklistEntry } from './src/types';
 
-// Derive __dirname for ESM context
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Derive __dirname for ESM or CJS context safely
+const getDirname = () => {
+  if (typeof __dirname !== 'undefined') return __dirname;
+  try {
+    return path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    return process.cwd();
+  }
+};
+const safeDirname = getDirname();
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
