@@ -408,6 +408,7 @@ export default function App() {
           {adminTab === 'reviews' && (
             <ReviewManagementView
               reviews={reviews}
+              onAddReview={handleAddReview}
               onUpdateReview={handleUpdateReview}
               onDeleteReview={handleDeleteReview}
             />

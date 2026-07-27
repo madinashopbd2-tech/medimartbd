@@ -206,60 +206,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Bundle & Quantity Selection */}
-          <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-100">
-            <label className="block text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-              <Tag className="w-4 h-4 text-emerald-600" />
-              পরিমাণ ও অফার নির্বাচন করুন:
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => setQuantity(1)}
-                className={`p-3 rounded-xl border text-left transition-all relative ${
-                  quantity === 1 
-                    ? 'border-emerald-600 bg-white ring-2 ring-emerald-500/20 shadow-sm' 
-                    : 'border-slate-200 bg-white/80 hover:border-slate-300'
-                }`}
-              >
-                <div className="text-xs font-semibold text-slate-500">১ টি পিস</div>
-                <div className="text-base font-bold text-slate-900 mt-0.5">৳{unitPrice}</div>
-                <span className="text-[11px] text-emerald-600 font-medium">রেগুলার প্রাইস</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setQuantity(2)}
-                className={`p-3 rounded-xl border text-left transition-all relative ${
-                  quantity === 2 
-                    ? 'border-emerald-600 bg-white ring-2 ring-emerald-500/20 shadow-sm' 
-                    : 'border-slate-200 bg-white/80 hover:border-slate-300'
-                }`}
-              >
-                <span className="absolute -top-2.5 right-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  জনপ্রিয় অফার
-                </span>
-                <div className="text-xs font-semibold text-slate-500">২ টি পিস</div>
-                <div className="text-base font-bold text-slate-900 mt-0.5">৳{unitPrice * 2}</div>
-                <span className="text-[11px] text-amber-700 font-bold">ফ্রি গিফট / ডেলিভারি ডিসকাউন্ট</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setQuantity(3)}
-                className={`p-3 rounded-xl border text-left transition-all relative ${
-                  quantity === 3 
-                    ? 'border-emerald-600 bg-white ring-2 ring-emerald-500/20 shadow-sm' 
-                    : 'border-slate-200 bg-white/80 hover:border-slate-300'
-                }`}
-              >
-                <div className="text-xs font-semibold text-slate-500">৩ টি পিস (ফ্যামিলি প্যাক)</div>
-                <div className="text-base font-bold text-slate-900 mt-0.5">৳{unitPrice * 3}</div>
-                <span className="text-[11px] text-emerald-700 font-bold">সর্বোচ্চ সেভিং</span>
-              </button>
-            </div>
-          </div>
-
           {/* Customer Personal Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
