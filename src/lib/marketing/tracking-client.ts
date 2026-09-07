@@ -855,8 +855,15 @@ export function trackClientWatchVideo(videoTitle: string, videoUrl?: string, det
 /**
  * 5. Track PageScroll Event
  */
-export function trackClientPageScroll(depthPercent: number, sectionName = 'LandingPage') {
+export function trackClientPageScroll(depthPercent: number, sectionName = 'LandingPage', force = false) {
   if (typeof window === 'undefined') return;
+  const sKey = `mkt_pagescroll_${depthPercent}`;
+  if (!force) {
+    try {
+      if (sessionStorage.getItem(sKey) === '1') return;
+      sessionStorage.setItem(sKey, '1');
+    } catch (e) {}
+  }
   const eventId = generateEventId(`pagescroll_${depthPercent}`);
 
   // Meta Pixel
@@ -909,9 +916,16 @@ export function trackClientPageScroll(depthPercent: number, sectionName = 'Landi
 /**
  * 6. Track ScrollDepth Event (25%, 50%, 75%, 90%, 100%)
  */
-export function trackClientScrollDepth(depthPercent: number, sectionName = 'LandingPage') {
+export function trackClientScrollDepth(depthPercent: number, sectionName = 'LandingPage', force = false) {
   if (typeof window === 'undefined') return;
-  if (firedScrollDepths.has(depthPercent)) return;
+  const sKey = `mkt_scrolldepth_${depthPercent}`;
+  if (!force) {
+    if (firedScrollDepths.has(depthPercent)) return;
+    try {
+      if (sessionStorage.getItem(sKey) === '1') return;
+      sessionStorage.setItem(sKey, '1');
+    } catch (e) {}
+  }
   firedScrollDepths.add(depthPercent);
 
   const eventId = generateEventId(`scrolldepth_${depthPercent}`);
@@ -966,9 +980,16 @@ export function trackClientScrollDepth(depthPercent: number, sectionName = 'Land
 /**
  * 7. Track TimeOnPage Event (10s, 30s, 60s, 120s, etc.)
  */
-export function trackClientTimeOnPage(seconds: number) {
+export function trackClientTimeOnPage(seconds: number, force = false) {
   if (typeof window === 'undefined') return;
-  if (firedTimeOnPage.has(seconds)) return;
+  const sKey = `mkt_timeonpage_${seconds}`;
+  if (!force) {
+    if (firedTimeOnPage.has(seconds)) return;
+    try {
+      if (sessionStorage.getItem(sKey) === '1') return;
+      sessionStorage.setItem(sKey, '1');
+    } catch (e) {}
+  }
   firedTimeOnPage.add(seconds);
 
   const eventId = generateEventId(`timeonpage_${seconds}s`);

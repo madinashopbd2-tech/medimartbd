@@ -204,19 +204,13 @@ export default function App() {
     if (!settings) return;
     initTrackingScripts(settings, product);
 
-    // 1. TimeOnPage Timers (10s, 30s, 60s, 120s)
+    // 1. TimeOnPage Timer (Single milestone: 30s engagement)
     const timers = [
-      setTimeout(() => trackClientTimeOnPage(10), 10000),
       setTimeout(() => trackClientTimeOnPage(30), 30000),
-      setTimeout(() => trackClientTimeOnPage(60), 60000),
-      setTimeout(() => trackClientTimeOnPage(120), 120000),
     ];
 
-    // 2. Scroll Depth & PageScroll Tracking
-    let scrolled25 = false;
+    // 2. Scroll Milestone (50% Half Page) - Fired only once per visit
     let scrolled50 = false;
-    let scrolled75 = false;
-    let scrolled90 = false;
     let formReached = false;
 
     const handleScroll = () => {
@@ -225,25 +219,9 @@ export default function App() {
       const currentScroll = window.scrollY;
       const scrollPercent = (currentScroll / totalHeight) * 100;
 
-      if (scrollPercent >= 25 && !scrolled25) {
-        scrolled25 = true;
-        trackClientScrollDepth(25, 'TopContent');
-        trackClientPageScroll(25, 'TopContent');
-      }
       if (scrollPercent >= 50 && !scrolled50) {
         scrolled50 = true;
         trackClientScrollDepth(50, 'MidContent');
-        trackClientPageScroll(50, 'MidContent');
-      }
-      if (scrollPercent >= 75 && !scrolled75) {
-        scrolled75 = true;
-        trackClientScrollDepth(75, 'BottomContent');
-        trackClientPageScroll(75, 'BottomContent');
-      }
-      if (scrollPercent >= 90 && !scrolled90) {
-        scrolled90 = true;
-        trackClientScrollDepth(90, 'PreFooter');
-        trackClientPageScroll(90, 'PreFooter');
       }
 
       const formEl = document.getElementById('checkout-form-section') || document.getElementById('order-form');
@@ -260,7 +238,7 @@ export default function App() {
       window.removeEventListener('scroll', handleScroll);
       timers.forEach(clearTimeout);
     };
-  }, [settings, product]);
+  }, [settings?.metaPixelId, product?.id]);
 
   const scrollToCheckout = (source = 'CTA_Button') => {
     if (product) {

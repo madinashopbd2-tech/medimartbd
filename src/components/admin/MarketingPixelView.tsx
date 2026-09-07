@@ -200,11 +200,11 @@ export const MarketingPixelView: React.FC<MarketingPixelViewProps> = ({
       } else if (eventName === 'WatchVideo') {
         trackClientWatchVideo('Product Demo Video - ProFlex Orthopedic', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
       } else if (eventName === 'PageScroll') {
-        trackClientPageScroll(50, 'MiddleOfPage');
+        trackClientPageScroll(50, 'MiddleOfPage', true);
       } else if (eventName === 'ScrollDepth') {
-        trackClientScrollDepth(75, 'DeepContent');
+        trackClientScrollDepth(75, 'DeepContent', true);
       } else if (eventName === 'TimeOnPage') {
-        trackClientTimeOnPage(30);
+        trackClientTimeOnPage(30, true);
       } else if (eventName === 'InternalClick') {
         trackClientInternalClick('CTA_Order_Now_Button', 'OrderFormSection');
       } else if (eventName === 'OutboundClick') {
