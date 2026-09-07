@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { FaqData } from '../../types';
+import { trackClientInternalClick } from '../../lib/marketing/tracking-client';
 
 interface AccordionFAQsProps {
   faqs: FaqData[];
@@ -11,8 +12,12 @@ interface AccordionFAQsProps {
 export const AccordionFAQs: React.FC<AccordionFAQsProps> = ({ faqs, sectionBadge, sectionTitle }) => {
   const [openId, setOpenId] = useState<string | null>(faqs[0]?.id || null);
 
-  const toggleFaq = (id: string) => {
-    setOpenId(openId === id ? null : id);
+  const toggleFaq = (id: string, question: string) => {
+    const nextState = openId === id ? null : id;
+    setOpenId(nextState);
+    if (nextState) {
+      trackClientInternalClick('FAQ_Open', question);
+    }
   };
 
   return (
@@ -37,7 +42,7 @@ export const AccordionFAQs: React.FC<AccordionFAQsProps> = ({ faqs, sectionBadge
               >
                 <button
                   type="button"
-                  onClick={() => toggleFaq(faq.id)}
+                  onClick={() => toggleFaq(faq.id, faq.question)}
                   className="w-full px-6 py-4 text-left font-bold text-slate-900 text-sm sm:text-base flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-100/80"
                 >
                   <span className="flex items-center gap-2.5">

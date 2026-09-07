@@ -134,16 +134,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 
     setIsSubmitting(true);
 
+    // Trigger InitiateCheckout pixel event
+    trackClientInitiateCheckout(product.title, grandTotal);
+
     const district = deliveryLocation === 'inside' ? 'Dhaka' : 'Outside Dhaka';
     const upazila = deliveryLocation === 'inside' ? 'Dhaka City' : 'Outside Dhaka';
-
-    // Trigger InitiateCheckout pixel event with customer user data
-    trackClientInitiateCheckout(
-      product.title,
-      grandTotal,
-      { trigger: 'FormSubmit' },
-      { phone: cleanPhone, name: customerName.trim(), district }
-    );
 
     const clickContext = getMarketingClickContext();
 
@@ -262,12 +257,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 required
                 value={customerName}
                 onFocus={() => {
-                  trackClientInitiateCheckout(
-                    product.title,
-                    grandTotal,
-                    { trigger: 'NameInputFocus' },
-                    { name: customerName.trim(), phone: phone.trim() }
-                  );
+                  trackClientInitiateCheckout(product.title, grandTotal, { trigger: 'NameInputFocus' });
                   trackClientInternalClick('Input_CustomerName', 'Focus');
                 }}
                 onChange={(e) => setCustomerName(e.target.value)}
@@ -286,24 +276,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 required
                 value={phone}
                 onFocus={() => {
-                  trackClientInitiateCheckout(
-                    product.title,
-                    grandTotal,
-                    { trigger: 'PhoneInputFocus' },
-                    { name: customerName.trim(), phone: phone.trim() }
-                  );
+                  trackClientInitiateCheckout(product.title, grandTotal, { trigger: 'PhoneInputFocus' });
                   trackClientInternalClick('Input_Phone', 'Focus');
-                }}
-                onBlur={() => {
-                  const cleaned = phone.replace(/\D/g, '');
-                  if (cleaned.length >= 11) {
-                    trackClientInitiateCheckout(
-                      product.title,
-                      grandTotal,
-                      { trigger: 'PhoneInputComplete' },
-                      { name: customerName.trim(), phone: cleaned }
-                    );
-                  }
                 }}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="যেমন: 01712345678"

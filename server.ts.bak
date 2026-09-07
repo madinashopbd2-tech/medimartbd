@@ -244,44 +244,18 @@ async function startServer() {
         return res.status(400).json({ success: false, error: 'eventName is required' });
       }
 
-      // 1. Resolve real client IP across Cloudflare, Nginx, and direct proxies
-      const rawIp =
-        (req.headers['cf-connecting-ip'] as string) ||
-        (req.headers['x-real-ip'] as string) ||
-        (req.headers['x-forwarded-for'] as string) ||
-        req.socket.remoteAddress ||
-        '';
+      const rawIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
       const clientIp = rawIp.split(',')[0].trim();
-      const userAgent = (req.headers['user-agent'] as string) || 'Mozilla/5.0';
-
-      // 2. Parse HTTP request cookies for backup _fbp and _fbc
-      const cookieHeader = req.headers.cookie || '';
-      const requestCookies: Record<string, string> = {};
-      if (cookieHeader) {
-        cookieHeader.split(';').forEach((cookie) => {
-          const parts = cookie.split('=');
-          const name = parts.shift()?.trim();
-          if (name) {
-            requestCookies[name] = decodeURIComponent(parts.join('=').trim().replace(/^"|"$/g, ''));
-          }
-        });
-      }
-      const cookieFbp = requestCookies['_fbp'] || '';
-      const cookieFbc = requestCookies['_fbc'] || '';
-
-      // 3. Fallback domain
-      const defaultDomain = req.headers.host ? `https://${req.headers.host}` : 'https://malaysianbd.shop';
+      const userAgent = req.headers['user-agent'] || 'Mozilla/5.0';
 
       const payload = {
         eventName,
         eventId: eventId || `evt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
         eventTime: Math.floor(Date.now() / 1000),
-        eventSourceUrl: eventSourceUrl || req.headers.referer || defaultDomain,
+        eventSourceUrl: eventSourceUrl || req.headers.referer || 'https://my-cod-store.com',
         userData: {
-          ipAddress: clientIp || undefined,
+          ipAddress: clientIp,
           userAgent,
-          fbp: userData.fbp || cookieFbp || undefined,
-          fbc: userData.fbc || cookieFbc || undefined,
           ...userData,
         },
         customData: {

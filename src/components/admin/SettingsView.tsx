@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Truck, Send, Tag, Plus, Trash2, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { 
+  Settings as SettingsIcon, 
+  Truck, 
+  Send, 
+  Tag, 
+  Plus, 
+  Trash2, 
+  CheckCircle2, 
+  ShieldAlert, 
+  Globe, 
+  Layout, 
+  Image as ImageIcon,
+  Sparkles,
+  ExternalLink
+} from 'lucide-react';
 import { StoreSettings, CouponData } from '../../types';
 
 interface SettingsViewProps {
@@ -72,6 +86,136 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* 1. Website Identity, Browser Tab Title & Favicon */}
+      <form onSubmit={handleSave} className="bg-[#09090b] p-6 rounded-2xl border border-[#27272a] space-y-6">
+        <div className="flex justify-between items-center border-b border-[#27272a] pb-4">
+          <div>
+            <h3 className="font-extrabold text-white text-base flex items-center gap-2">
+              <Globe className="w-5 h-5 text-indigo-400" />
+              ব্রাউজার ট্যাব টাইটেল ও ওয়েবসাইট নাম (Browser Tab Title & Identity)
+            </h3>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              ব্রাউজারের ওপরের ট্যাবে (Browser Tab), গুগল সার্চ ও ফেসবুক শেয়ারে যে নামটি প্রদর্শিত হবে তা পরিবর্তন করুন।
+            </p>
+          </div>
+          {isSaved && (
+            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1 font-mono">
+              <CheckCircle2 className="w-3.5 h-3.5" /> সেভ হয়েছে
+            </span>
+          )}
+        </div>
+
+        {/* Live Chrome Browser Tab Mockup Preview */}
+        <div className="bg-[#18181b] p-4 rounded-xl border border-zinc-800 space-y-2">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5 font-mono">
+            <Layout className="w-3.5 h-3.5 text-indigo-400" />
+            ব্রাউজার ট্যাব লাইভ প্রিভিউ (Live Browser Tab Preview)
+          </p>
+          <div className="bg-[#27272a] rounded-t-xl p-2 pb-0 flex items-center max-w-sm">
+            <div className="bg-[#121215] text-zinc-200 text-xs px-3.5 py-2 rounded-t-lg flex items-center gap-2 border-t border-x border-zinc-700 w-full shadow-inner truncate">
+              {form.faviconUrl ? (
+                <img 
+                  src={form.faviconUrl} 
+                  alt="Favicon" 
+                  className="w-4 h-4 rounded-xs shrink-0 object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/3081/3081559.png';
+                  }}
+                />
+              ) : (
+                <span className="text-sm">🛍️</span>
+              )}
+              <span className="font-medium truncate flex-1">
+                {form.siteTitle || 'আপনার ওয়েবসাইটের নাম ও ব্রাউজার টাইটেল'}
+              </span>
+              <span className="text-zinc-500 text-[10px] hover:text-zinc-300">✕</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Inputs */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-zinc-200 mb-1 flex items-center justify-between">
+              <span>ব্রাউজার ট্যাব টাইটেল (Browser Tab / SEO Title) <span className="text-rose-400 font-bold">*</span></span>
+              <span className="text-[10px] text-zinc-400 font-normal">ট্যাবের লাল চিহ্নের নাম</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={form.siteTitle || ''}
+              onChange={(e) => setForm({ ...form, siteTitle: e.target.value })}
+              placeholder="যেমন: Prime Test 90 Piece Capsules | 100% Original বা Medimart BD"
+              className="w-full px-3.5 py-2.5 bg-[#121215] border border-[#27272a] text-white rounded-xl font-bold text-xs outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+            <p className="text-[11px] text-zinc-400 mt-1">
+              এটি ব্রাউজারের ওপরের ট্যাবে, গুগল সার্চ রেজাল্ট এবং বুকমার্কে সরাসরি শো করবে।
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-zinc-200 mb-1">
+                ওয়েবসাইট / ব্র্যান্ডের নাম (Brand / Store Name)
+              </label>
+              <input
+                type="text"
+                value={form.storeName || ''}
+                onChange={(e) => setForm({ ...form, storeName: e.target.value })}
+                placeholder="যেমন: Medimart BD বা Prime Test Shop"
+                className="w-full px-3.5 py-2.5 bg-[#121215] border border-[#27272a] text-white rounded-xl text-xs outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-zinc-200 mb-1">
+                ফ্যাভিকন আইকন লিংক (Browser Tab Favicon Icon URL)
+              </label>
+              <input
+                type="text"
+                value={form.faviconUrl || ''}
+                onChange={(e) => setForm({ ...form, faviconUrl: e.target.value })}
+                placeholder="https://example.com/icon.png"
+                className="w-full px-3.5 py-2.5 bg-[#121215] border border-[#27272a] text-white rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Delivery Charges */}
+          <div className="pt-3 border-t border-[#27272a] grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 mb-1">
+                ঢাকার ভিতরে ডেলিভারি চার্জ (টাকা)
+              </label>
+              <input
+                type="number"
+                value={form.deliveryFeeInside ?? 70}
+                onChange={(e) => setForm({ ...form, deliveryFeeInside: Number(e.target.value) })}
+                className="w-full px-3.5 py-2 bg-[#121215] border border-[#27272a] text-white rounded-xl text-xs font-mono font-bold outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 mb-1">
+                ঢাকার বাইরে ডেলিভারি চার্জ (টাকা)
+              </label>
+              <input
+                type="number"
+                value={form.deliveryFeeOutside ?? 130}
+                onChange={(e) => setForm({ ...form, deliveryFeeOutside: Number(e.target.value) })}
+                className="w-full px-3.5 py-2 bg-[#121215] border border-[#27272a] text-white rounded-xl text-xs font-mono font-bold outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 cursor-pointer transition-all active:scale-95"
+        >
+          নাম ও টাইটেল সেভ করুন
+        </button>
+      </form>
+
       {/* Password & Security */}
       <form onSubmit={handleSave} className="bg-[#09090b] p-6 rounded-2xl border border-[#27272a] space-y-4">
         <div className="flex justify-between items-center border-b border-[#27272a] pb-4">

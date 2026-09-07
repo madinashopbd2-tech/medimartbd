@@ -17,6 +17,7 @@ import {
   ProductData, 
   StoreSettings, 
   OrderData, 
+  IncompleteOrderData,
   ReviewData, 
   FaqData, 
   CouponData, 
@@ -38,6 +39,10 @@ import { FloatingChatButtons } from './components/landing/FloatingChatButtons';
 import { 
   initTrackingScripts, 
   trackClientScrollDepth, 
+  trackClientPageScroll,
+  trackClientTimeOnPage,
+  trackClientInitiateCheckout,
+  trackClientInternalClick,
   trackClientPurchase 
 } from './lib/marketing/tracking-client';
 
@@ -46,6 +51,7 @@ import { AdminLayout } from './components/admin/AdminLayout';
 import { DashboardView } from './components/admin/DashboardView';
 import { CmsBuilderView } from './components/admin/CmsBuilderView';
 import { OrderManagementView } from './components/admin/OrderManagementView';
+import { IncompleteOrdersView } from './components/admin/IncompleteOrdersView';
 import { CustomerBlacklistView } from './components/admin/CustomerBlacklistView';
 import { MarketingPixelView } from './components/admin/MarketingPixelView';
 import { SettingsView } from './components/admin/SettingsView';
@@ -65,8 +71,44 @@ export default function App() {
     return 'storefront';
   });
 
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings' | 'reviews'>('dashboard');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminTab, setAdminTabState] = useState<'dashboard' | 'cms' | 'orders' | 'incomplete-orders' | 'customers' | 'marketing' | 'settings' | 'reviews'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem('admin_active_tab');
+      if (savedTab && ['dashboard', 'cms', 'orders', 'incomplete-orders', 'customers', 'marketing', 'settings', 'reviews'].includes(savedTab)) {
+        return savedTab as any;
+      }
+    }
+    return 'dashboard';
+  });
+
+  const setAdminTab = (tab: 'dashboard' | 'cms' | 'orders' | 'incomplete-orders' | 'customers' | 'marketing' | 'settings' | 'reviews') => {
+    setAdminTabState(tab);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('admin_active_tab', tab);
+    }
+  };
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('admin_session_auth') === 'true';
+    }
+    return false;
+  });
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('admin_session_auth', 'true');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('admin_session_auth');
+      localStorage.removeItem('admin_active_tab');
+    }
+  };
 
   // URL route sync effect
   useEffect(() => {
@@ -106,6 +148,7 @@ export default function App() {
   const [faqs, setFaqs] = useState<FaqData[]>([]);
   const [coupons, setCoupons] = useState<CouponData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
+  const [incompleteOrders, setIncompleteOrders] = useState<IncompleteOrderData[]>([]);
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -126,6 +169,9 @@ export default function App() {
       setFaqs(data.faqs);
       setCoupons(data.coupons);
       setOrders(data.orders);
+      if (data.incompleteOrders) {
+        setIncompleteOrders(data.incompleteOrders);
+      }
       setBlacklist(data.blacklist);
       setIsLoading(false);
     } catch (err) {
@@ -142,15 +188,35 @@ export default function App() {
     if (settings?.siteTitle) {
       document.title = settings.siteTitle;
     }
-  }, [settings?.siteTitle]);
+    if (settings?.faviconUrl) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'shortcut icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = settings.faviconUrl;
+    }
+  }, [settings?.siteTitle, settings?.faviconUrl]);
 
-  // Initialize Tracking Scripts (Meta Pixel, TikTok Pixel, GA4, GTM, Domain Verification) & Scroll Depth Tracking
+  // Initialize Tracking Scripts (Meta Pixel, TikTok Pixel, GA4, GTM, Domain Verification) & Comprehensive Event Handlers
   useEffect(() => {
     if (!settings) return;
     initTrackingScripts(settings, product);
 
+    // 1. TimeOnPage Timers (10s, 30s, 60s, 120s)
+    const timers = [
+      setTimeout(() => trackClientTimeOnPage(10), 10000),
+      setTimeout(() => trackClientTimeOnPage(30), 30000),
+      setTimeout(() => trackClientTimeOnPage(60), 60000),
+      setTimeout(() => trackClientTimeOnPage(120), 120000),
+    ];
+
+    // 2. Scroll Depth & PageScroll Tracking
+    let scrolled25 = false;
     let scrolled50 = false;
     let scrolled75 = false;
+    let scrolled90 = false;
     let formReached = false;
 
     const handleScroll = () => {
@@ -159,31 +225,54 @@ export default function App() {
       const currentScroll = window.scrollY;
       const scrollPercent = (currentScroll / totalHeight) * 100;
 
+      if (scrollPercent >= 25 && !scrolled25) {
+        scrolled25 = true;
+        trackClientScrollDepth(25, 'TopContent');
+        trackClientPageScroll(25, 'TopContent');
+      }
       if (scrollPercent >= 50 && !scrolled50) {
         scrolled50 = true;
         trackClientScrollDepth(50, 'MidContent');
+        trackClientPageScroll(50, 'MidContent');
       }
       if (scrollPercent >= 75 && !scrolled75) {
         scrolled75 = true;
         trackClientScrollDepth(75, 'BottomContent');
+        trackClientPageScroll(75, 'BottomContent');
+      }
+      if (scrollPercent >= 90 && !scrolled90) {
+        scrolled90 = true;
+        trackClientScrollDepth(90, 'PreFooter');
+        trackClientPageScroll(90, 'PreFooter');
       }
 
       const formEl = document.getElementById('checkout-form-section') || document.getElementById('order-form');
       if (formEl && !formReached) {
         const rect = formEl.getBoundingClientRect();
-        if (rect.top <= window.innerHeight * 0.8) {
+        if (rect.top <= window.innerHeight * 0.85) {
           formReached = true;
           trackClientScrollDepth(100, 'OrderFormSection');
+          trackClientPageScroll(100, 'OrderFormSection');
+          if (product) {
+            trackClientInitiateCheckout(product.title, product.offerPrice || product.regularPrice, { trigger: 'ScrollToForm' });
+          }
         }
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      timers.forEach(clearTimeout);
+    };
   }, [settings, product]);
 
-  const scrollToCheckout = () => {
-    const el = document.getElementById('checkout-form-section');
+  const scrollToCheckout = (source = 'CTA_Button') => {
+    if (product) {
+      trackClientInitiateCheckout(product.title, product.offerPrice || product.regularPrice, { source });
+      trackClientInternalClick(source, 'checkout-form-section');
+    }
+    const el = document.getElementById('checkout-form-section') || document.getElementById('order-form');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
@@ -250,11 +339,18 @@ export default function App() {
   };
 
   // Add Blacklist Entry
-  const handleAddBlacklist = async (phone: string, reason: string) => {
+  const handleAddBlacklist = async (payloadOrPhone: any, reason?: string) => {
+    let bodyData: any = {};
+    if (typeof payloadOrPhone === 'string') {
+      bodyData = { type: 'PHONE', value: payloadOrPhone, phone: payloadOrPhone, reason: reason || 'অ্যাডমিন কর্তৃক ব্ল্যাকলিস্টেড' };
+    } else {
+      bodyData = payloadOrPhone;
+    }
+
     const res = await fetch('/api/blacklist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, reason }),
+      body: JSON.stringify(bodyData),
     });
     const data = await res.json();
     if (data.success) {
@@ -295,6 +391,65 @@ export default function App() {
     await fetch(`/api/reviews/${id}`, {
       method: 'DELETE',
     });
+  };
+
+  // Incomplete Orders Handlers
+  const handleUpdateIncompleteOrder = async (id: string, updates: { status?: 'ABANDONED' | 'RECOVERED' | 'REJECTED'; adminNote?: string }) => {
+    try {
+      const res = await fetch(`/api/incomplete-orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      const data = await res.json();
+      if (data.success && data.incompleteOrders) {
+        setIncompleteOrders(data.incompleteOrders);
+      }
+    } catch (err) {
+      console.error('Error updating incomplete order:', err);
+    }
+  };
+
+  const handleDeleteIncompleteOrder = async (id: string) => {
+    try {
+      const res = await fetch(`/api/incomplete-orders/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success && data.incompleteOrders) {
+        setIncompleteOrders(data.incompleteOrders);
+      }
+    } catch (err) {
+      console.error('Error deleting incomplete order:', err);
+    }
+  };
+
+  // Convert Incomplete Lead into a real Confirmed Order directly from admin
+  const handleConvertIncompleteToOrder = async (inc: IncompleteOrderData) => {
+    if (!product || !settings) return;
+    const cleanPhone = inc.phone.replace(/[^0-9]/g, '');
+    const district = inc.deliveryLocation === 'outside' ? 'Outside Dhaka' : 'Dhaka';
+    const upazila = inc.deliveryLocation === 'outside' ? 'Outside Dhaka' : 'Dhaka City';
+
+    const orderPayload = {
+      customerName: inc.customerName || 'Customer',
+      phone: cleanPhone,
+      address: inc.address || 'Phone Order Confirmation',
+      district,
+      upazila,
+      quantity: inc.quantity || 1,
+      unitPrice: inc.unitPrice || product.offerPrice,
+      deliveryFee: inc.deliveryFee || 70,
+      discountAmount: inc.discountAmount || 0,
+      totalAmount: inc.totalAmount || 1520,
+      orderNote: inc.adminNote ? `Recovered Lead: ${inc.adminNote}` : 'Recovered from Incomplete Order via Call',
+      isOtpVerified: true,
+      deviceId: inc.deviceId || 'admin_manual_convert',
+    };
+
+    const result = await handleOrderSubmit(orderPayload);
+    if (result.success) {
+      handleUpdateIncompleteOrder(inc.id, { status: 'RECOVERED' });
+      alert('সফল হয়েছে! ইনকমপ্লিট অর্ডারটিকে পূর্ণাঙ্গ কনফার্মড অর্ডারে রূপান্তর করা হয়েছে।');
+    }
   };
 
   // Coupon Actions
@@ -370,6 +525,7 @@ export default function App() {
   };
 
   const pendingCount = orders.filter((o) => o.status === 'PENDING').length;
+  const abandonedCount = incompleteOrders.filter((i) => i.status === 'ABANDONED').length;
   const highRiskCount = orders.filter((o) => o.riskLevel === 'HIGH').length;
 
   return (
@@ -377,18 +533,34 @@ export default function App() {
       {/* Render Mode Switcher */}
       {viewMode === 'admin' ? (
         !isAuthenticated ? (
-          <LoginView onLoginSuccess={() => setIsAuthenticated(true)} />
+          <LoginView onLoginSuccess={handleLoginSuccess} />
         ) : (
         <AdminLayout
           activeTab={adminTab}
           setActiveTab={setAdminTab}
           pendingOrdersCount={pendingCount}
+          incompleteOrdersCount={abandonedCount}
           highRiskCount={highRiskCount}
           onExitAdmin={handleExitAdmin}
-          onLogout={() => setIsAuthenticated(false)}
+          onLogout={handleLogout}
         >
           {adminTab === 'dashboard' && (
             <DashboardView orders={orders} onViewOrders={() => setAdminTab('orders')} />
+          )}
+          {adminTab === 'orders' && (
+            <OrderManagementView
+              orders={orders}
+              onUpdateOrderStatus={handleUpdateOrderStatus}
+              onBlacklistCustomer={handleAddBlacklist}
+            />
+          )}
+          {adminTab === 'incomplete-orders' && (
+            <IncompleteOrdersView
+              incompleteOrders={incompleteOrders}
+              onUpdateIncompleteOrder={handleUpdateIncompleteOrder}
+              onDeleteIncompleteOrder={handleDeleteIncompleteOrder}
+              onConvertToFullOrder={handleConvertIncompleteToOrder}
+            />
           )}
           {adminTab === 'cms' && (
             <CmsBuilderView
@@ -396,13 +568,6 @@ export default function App() {
               settings={settings}
               onSaveProduct={handleSaveProduct}
               onSaveSettings={handleSaveSettings}
-            />
-          )}
-          {adminTab === 'orders' && (
-            <OrderManagementView
-              orders={orders}
-              onUpdateOrderStatus={handleUpdateOrderStatus}
-              onBlacklistCustomer={handleAddBlacklist}
             />
           )}
           {adminTab === 'reviews' && (
@@ -416,6 +581,9 @@ export default function App() {
           {adminTab === 'customers' && (
             <CustomerBlacklistView
               blacklist={blacklist}
+              orders={orders}
+              settings={settings}
+              onSaveSettings={handleSaveSettings}
               onAddBlacklist={handleAddBlacklist}
               onRemoveBlacklist={handleRemoveBlacklist}
             />

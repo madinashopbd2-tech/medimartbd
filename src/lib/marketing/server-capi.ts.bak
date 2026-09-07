@@ -127,77 +127,31 @@ export async function sendMetaCapiEvent(
   const hashedEmail = hashData(userData.email || '');
 
   // Meta First-Party Cookie IDs: _fbp and _fbc
-  const fbp = userData.fbp?.trim() || undefined;
-  let fbc = userData.fbc?.trim() || undefined;
-  if (!fbc && userData.fbclid?.trim()) {
-    fbc = `fb.1.${Math.floor(Date.now() / 1000)}.${userData.fbclid.trim()}`;
+  const fbp = userData.fbp || undefined;
+  let fbc = userData.fbc || undefined;
+  if (!fbc && userData.fbclid) {
+    fbc = `fb.1.${Math.floor(Date.now() / 1000)}.${userData.fbclid}`;
   }
-  const hashedExternalId = userData.externalId?.trim() ? hashData(userData.externalId.trim()) : undefined;
-
-  // Build clean, compliant user_data object for Meta Graph API
-  // Rule: Meta CAPI explicitly penalizes empty arrays (e.g. ph: []).
-  // Parameters must ONLY be included if they have valid non-empty hashed values.
-  const metaUserData: Record<string, any> = {};
-
-  if (hashedPhone) {
-    metaUserData.ph = [hashedPhone];
-  }
-  if (hashedName) {
-    metaUserData.fn = [hashedName];
-  }
-  if (hashedCity) {
-    metaUserData.ct = [hashedCity];
-  }
-  if (hashedEmail) {
-    metaUserData.em = [hashedEmail];
-  }
-
-  // Country code must be SHA-256 hashed lowercase 2-letter code ('bd')
-  // Only send when customer demographic or contact signals exist
-  if (hashedPhone || hashedCity || hashedName || hashedEmail) {
-    metaUserData.country = [hashData('bd')];
-  }
-
-  // First-party cookie parameters (never hashed)
-  if (fbp) {
-    metaUserData.fbp = fbp;
-  }
-  if (fbc) {
-    metaUserData.fbc = fbc;
-  }
-
-  // External ID (hashed array of strings)
-  if (hashedExternalId) {
-    metaUserData.external_id = [hashedExternalId];
-  }
-
-  // Client IP address: Meta requires valid public IP. Omit loopback / private IPs (127.0.0.1, ::1)
-  const clientIp = userData.ipAddress?.trim();
-  const isPrivateIp =
-    !clientIp ||
-    clientIp === '127.0.0.1' ||
-    clientIp === '::1' ||
-    clientIp.startsWith('::ffff:127.') ||
-    clientIp.startsWith('10.') ||
-    clientIp.startsWith('192.168.') ||
-    /^172\.(1[6-9]|2\d|3[0-1])\./.test(clientIp);
-
-  if (clientIp && !isPrivateIp) {
-    metaUserData.client_ip_address = clientIp;
-  }
-
-  // Client user agent
-  if (userData.userAgent?.trim()) {
-    metaUserData.client_user_agent = userData.userAgent.trim();
-  }
+  const hashedExternalId = userData.externalId ? hashData(userData.externalId) : undefined;
 
   const eventObject: any = {
     event_name: eventName,
     event_time: eventTime || Math.floor(Date.now() / 1000),
     event_id: eventId,
-    event_source_url: eventSourceUrl || 'https://malaysianbd.shop',
+    event_source_url: eventSourceUrl || 'https://my-cod-store.com',
     action_source: 'website',
-    user_data: metaUserData,
+    user_data: {
+      ph: hashedPhone ? [hashedPhone] : [],
+      fn: hashedName ? [hashedName] : [],
+      ct: hashedCity ? [hashedCity] : [],
+      em: hashedEmail ? [hashedEmail] : [],
+      country: ['bd'],
+      client_ip_address: userData.ipAddress || '127.0.0.1',
+      client_user_agent: userData.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      ...(fbp ? { fbp } : {}),
+      ...(fbc ? { fbc } : {}),
+      ...(hashedExternalId ? { external_id: hashedExternalId } : {}),
+    },
     custom_data: {
       currency: customData.currency || 'BDT',
       value: customData.value !== undefined ? customData.value : undefined,
@@ -311,7 +265,7 @@ export async function sendTikTokEventsApi(
         user: {
           phone_number: hashedPhone || undefined,
           email: hashedEmail || undefined,
-          ip: userData.ipAddress && !userData.ipAddress.startsWith('127.') && userData.ipAddress !== '::1' ? userData.ipAddress : undefined,
+          ip: userData.ipAddress || '127.0.0.1',
           user_agent: userData.userAgent || 'Mozilla/5.0',
           ttclid: userData.ttclid || undefined,
           external_id: userData.externalId ? hashData(userData.externalId) : undefined,

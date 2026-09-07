@@ -1,37 +1,12 @@
 import React, { useState } from 'react';
-import { Play, Image as ImageIcon, Video, Maximize2 } from 'lucide-react';
+import { Play, Image as ImageIcon, Video, Maximize2, ExternalLink } from 'lucide-react';
 import { ProductData } from '../../types';
+import { trackClientWatchVideo, trackClientInternalClick } from '../../lib/marketing/tracking-client';
+import { parseVideoUrl } from '../../utils/video-embed';
 
 interface MediaGalleryProps {
   product: ProductData;
 }
-
-const getEmbedInfo = (url?: string) => {
-  if (!url) return { isDirectMp4: false, embedUrl: '' };
-  const trimmed = url.trim();
-  if (trimmed.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) || trimmed.startsWith('data:video/')) {
-    return { isDirectMp4: true, embedUrl: trimmed };
-  }
-  let youtubeId = '';
-  if (trimmed.includes('youtu.be/')) {
-    youtubeId = trimmed.split('youtu.be/')[1]?.split('?')[0]?.split('&')[0] || '';
-  } else if (trimmed.includes('youtube.com/watch')) {
-    const urlParams = new URLSearchParams(trimmed.split('?')[1] || '');
-    youtubeId = urlParams.get('v') || '';
-  } else if (trimmed.includes('youtube.com/embed/')) {
-    youtubeId = trimmed.split('youtube.com/embed/')[1]?.split('?')[0]?.split('&')[0] || '';
-  } else if (trimmed.includes('youtube.com/shorts/')) {
-    youtubeId = trimmed.split('youtube.com/shorts/')[1]?.split('?')[0]?.split('&')[0] || '';
-  }
-
-  if (youtubeId) {
-    return {
-      isDirectMp4: false,
-      embedUrl: `https://www.youtube.com/embed/${youtubeId}?rel=0&autoplay=1&mute=1&controls=1`,
-    };
-  }
-  return { isDirectMp4: false, embedUrl: trimmed };
-};
 
 export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -41,7 +16,18 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
     ? selectedImage
     : (product.images[0] || '');
 
-  const videoInfo = getEmbedInfo(product.videoUrl);
+  const videoInfo = parseVideoUrl(product.videoUrl);
+
+  const handleOpenVideo = (source: string) => {
+    setIsVideoOpen(true);
+    trackClientWatchVideo(product.title, product.videoUrl, { source });
+    trackClientInternalClick('WatchVideo_Button', 'VideoModal', { source });
+  };
+
+  const handleSelectImage = (imgUrl: string, index: number) => {
+    setSelectedImage(imgUrl);
+    trackClientInternalClick(`Gallery_Thumbnail_${index + 1}`, imgUrl);
+  };
 
   return (
     <section className="py-10 bg-slate-50 border-y border-slate-200">
@@ -69,7 +55,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
               {/* Video Badge Button Overlay */}
               {product.videoUrl && (
                 <button
-                  onClick={() => setIsVideoOpen(true)}
+                  onClick={() => handleOpenVideo('OverlayBadge')}
                   className="absolute bottom-4 right-4 bg-slate-900/90 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg backdrop-blur-md flex items-center gap-2 transition-all cursor-pointer"
                 >
                   <Play className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -83,7 +69,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
               {product.images.map((imgUrl, index) => (
                 <button
                   key={index}
-                  onClick={() => setSelectedImage(imgUrl)}
+                  onClick={() => handleSelectImage(imgUrl, index)}
                   className={`w-20 h-20 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
                     activeImage === imgUrl ? 'border-emerald-600 ring-2 ring-emerald-500/20 shadow-md scale-105' : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
@@ -129,7 +115,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
                     <span>{product.mediaVideoBadgeText || 'লাইভ ভিডিও রিভিউ'}</span>
                   </span>
                   <button
-                    onClick={() => setIsVideoOpen(true)}
+                    onClick={() => handleOpenVideo('InlineFullscreen')}
                     className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 cursor-pointer bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200"
                   >
                     <Maximize2 className="w-3 h-3" />
@@ -138,7 +124,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
                 </div>
 
                 <div className="aspect-video w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-200 shadow-sm relative">
-                  {videoInfo.isDirectMp4 ? (
+                  {videoInfo.isDirectVideo ? (
                     <video
                       src={videoInfo.embedUrl}
                       controls
@@ -159,6 +145,20 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
                     />
                   )}
                 </div>
+
+                {videoInfo.rawUrl && (
+                  <div className="flex justify-end pt-1">
+                    <a
+                      href={videoInfo.rawUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-zinc-500 hover:text-emerald-600 flex items-center gap-1 transition-colors"
+                    >
+                      <span>ভিডিও আলাদা ট্যাবে দেখতে ক্লিক করুন</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -174,15 +174,28 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
                 <Video className="w-4 h-4 text-amber-400" />
                 প্রোডাক্ট ভিডিও ডেমো
               </h4>
-              <button
-                onClick={() => setIsVideoOpen(false)}
-                className="text-slate-400 hover:text-white text-xs font-bold px-3 py-1 bg-slate-800 rounded-lg cursor-pointer"
-              >
-                বন্ধ করুন ✕
-              </button>
+              <div className="flex items-center gap-2">
+                {videoInfo.rawUrl && (
+                  <a
+                    href={videoInfo.rawUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 px-2.5 py-1 bg-slate-800 rounded-lg"
+                  >
+                    <span>ওপেন করুন</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+                <button
+                  onClick={() => setIsVideoOpen(false)}
+                  className="text-slate-400 hover:text-white text-xs font-bold px-3 py-1 bg-slate-800 rounded-lg cursor-pointer"
+                >
+                  বন্ধ করুন ✕
+                </button>
+              </div>
             </div>
             <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
-              {videoInfo.isDirectMp4 ? (
+              {videoInfo.isDirectVideo ? (
                 <video
                   src={videoInfo.embedUrl}
                   controls

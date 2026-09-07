@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Filter, 
@@ -14,9 +14,12 @@ import {
   FileText, 
   ExternalLink,
   Ban,
-  QrCode
+  QrCode,
+  Flame,
+  Radio
 } from 'lucide-react';
 import { OrderData, OrderStatus } from '../../types';
+import { getLiveTimeAgo } from '../../utils/timeAgo';
 
 interface OrderManagementViewProps {
   orders: OrderData[];
@@ -32,6 +35,16 @@ export const OrderManagementView: React.FC<OrderManagementViewProps> = ({
   const [selectedStatusTab, setSelectedStatusTab] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Real-time ticking timestamp to update minutes & seconds live every second
+  const [nowMs, setNowMs] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Selected order for Thermal Invoice Print Modal
   const [printInvoiceOrder, setPrintInvoiceOrder] = useState<OrderData | null>(null);
   const [invoiceType, setInvoiceType] = useState<'4x6' | 'A4'>('4x6');
@@ -96,8 +109,16 @@ export const OrderManagementView: React.FC<OrderManagementViewProps> = ({
           />
         </div>
 
-        {/* Courier Export Buttons */}
-        <div className="flex items-center gap-2 w-full md:w-auto">
+        {/* Live Indicator & Courier Export Buttons */}
+        <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-xl text-[11px] font-bold font-mono">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>লাইভ কাউন্টার সক্রিয়</span>
+          </div>
+
           <button
             onClick={handleExportSteadfastCsv}
             className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
@@ -164,28 +185,58 @@ export const OrderManagementView: React.FC<OrderManagementViewProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((ord) => (
-                  <tr key={ord.id} className="hover:bg-slate-50 transition-colors">
-                    {/* Order Details */}
-                    <td className="p-4 space-y-1">
-                      <div className="font-mono font-black text-slate-900 text-sm flex items-center gap-2">
-                        <span>{ord.orderNumber}</span>
-                        {ord.isOtpVerified && (
-                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold">
-                            OTP Verified
+                filteredOrders.map((ord) => {
+                  const liveTime = getLiveTimeAgo(ord.createdAt, nowMs);
+
+                  return (
+                    <tr key={ord.id} className="hover:bg-slate-50 transition-colors">
+                      {/* Order Details & Live Elapsed Time */}
+                      <td className="p-4 space-y-1.5">
+                        <div className="font-mono font-black text-slate-900 text-sm flex items-center gap-2">
+                          <span>{ord.orderNumber}</span>
+                          {ord.isOtpVerified && (
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold">
+                              OTP Verified
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Dynamic Live Counter Badge */}
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold font-mono tracking-tight transition-all shadow-2xs border ${
+                              liveTime.isJustNow
+                                ? 'bg-amber-50 text-amber-900 border-amber-300 ring-2 ring-amber-400/30 animate-pulse'
+                                : liveTime.hours < 1
+                                ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                                : 'bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            <Clock
+                              className={`w-3.5 h-3.5 ${
+                                liveTime.isJustNow
+                                  ? 'text-amber-600 animate-spin'
+                                  : 'text-indigo-600'
+                              }`}
+                            />
+                            <span>{liveTime.formatted}</span>
                           </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-slate-500 font-mono">
-                        {new Date(ord.createdAt).toLocaleString('bn-BD', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </div>
-                      <div className="text-[10px] font-mono text-slate-400">CAPI ID: {ord.eventId}</div>
-                    </td>
+                        </div>
+
+                        <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1">
+                          <span>📅</span>
+                          <span>
+                            {new Date(ord.createdAt).toLocaleString('bn-BD', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-400">CAPI ID: {ord.eventId}</div>
+                      </td>
 
                     {/* Customer Info */}
                     <td className="p-4 space-y-1 max-w-xs">
@@ -281,7 +332,8 @@ export const OrderManagementView: React.FC<OrderManagementViewProps> = ({
                       </button>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

@@ -8,18 +8,21 @@ import {
   Settings, 
   ExternalLink, 
   ShieldCheck,
+  ShieldAlert,
   Search,
   KeyRound,
   Menu,
   X,
   LogOut,
-  Star
+  Star,
+  PhoneCall
 } from 'lucide-react';
 
 interface AdminLayoutProps {
-  activeTab: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings' | 'reviews';
-  setActiveTab: (tab: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings' | 'reviews') => void;
+  activeTab: 'dashboard' | 'cms' | 'orders' | 'incomplete-orders' | 'customers' | 'marketing' | 'settings' | 'reviews';
+  setActiveTab: (tab: 'dashboard' | 'cms' | 'orders' | 'incomplete-orders' | 'customers' | 'marketing' | 'settings' | 'reviews') => void;
   pendingOrdersCount: number;
+  incompleteOrdersCount?: number;
   highRiskCount: number;
   onExitAdmin: () => void;
   onLogout?: () => void;
@@ -30,6 +33,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   activeTab,
   setActiveTab,
   pendingOrdersCount,
+  incompleteOrdersCount = 0,
   highRiskCount,
   onExitAdmin,
   onLogout,
@@ -38,7 +42,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   interface NavItem {
-    id: 'dashboard' | 'cms' | 'orders' | 'customers' | 'marketing' | 'settings' | 'reviews';
+    id: 'dashboard' | 'cms' | 'orders' | 'incomplete-orders' | 'customers' | 'marketing' | 'settings' | 'reviews';
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     badge?: string | number | null;
@@ -54,12 +58,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       badge: pendingOrdersCount > 0 ? `${pendingOrdersCount} NEW` : '4 NEW',
       badgeColor: 'bg-indigo-600 text-white'
     },
+    {
+      id: 'incomplete-orders',
+      label: 'ইনকমপ্লিট অর্ডার (Abandoned)',
+      icon: PhoneCall,
+      badge: incompleteOrdersCount > 0 ? `${incompleteOrdersCount} Lead` : null,
+      badgeColor: 'bg-amber-500 text-slate-950 font-black'
+    },
     { id: 'cms', label: 'পেজ বিল্ডার (CMS)', icon: Palette },
     { id: 'reviews', label: 'রিভিউ ম্যানেজমেন্ট', icon: Star },
     { 
       id: 'customers', 
-      label: 'কাস্টমার ও ফ্রড ব্লক', 
-      icon: Users,
+      label: 'ফ্রড কাস্টমার ও রিপিট ব্লক', 
+      icon: ShieldAlert,
       badge: highRiskCount > 0 ? `${highRiskCount} Risk` : null,
       badgeColor: 'bg-rose-500 text-white'
     },
@@ -185,8 +196,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             <h2 className="text-base font-extrabold text-slate-900 capitalize tracking-tight flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 hidden sm:inline-block" />
               {activeTab === 'dashboard' && 'ড্যাশবোর্ড (Dashboard)'}
+              {activeTab === 'orders' && 'অর্ডার ম্যানেজমেন্ট (Orders)'}
+              {activeTab === 'incomplete-orders' && 'ইনকমপ্লিট অর্ডার রিকভারি (Abandoned Leads)'}
               {activeTab === 'cms' && 'পেজ বিল্ডার (Visual CMS Builder)'}
-              {activeTab === 'orders' && 'অর্ডার ম্যানেজমেন্ট'}
+              {activeTab === 'reviews' && 'কাস্টমার রিভিউ ম্যানেজমেন্ট'}
               {activeTab === 'customers' && 'কাস্টমার ও ফ্রড ব্লক ফিল্টার'}
               {activeTab === 'marketing' && 'মার্কেটিং পিক্সেল ও ট্র্যাকার'}
               {activeTab === 'settings' && 'স্টোর ও চার্জ সেটিংস'}

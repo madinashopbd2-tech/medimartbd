@@ -81,6 +81,7 @@ export interface OrderData {
   orderNote?: string;
   ipAddress?: string;
   userAgent?: string;
+  deviceId?: string;
   eventId: string; // Meta CAPI deterministic event_id
   courierName?: 'STEADFAST' | 'PATHAO';
   courierTracking?: string;
@@ -108,7 +109,9 @@ export interface FaqData {
 }
 
 export interface StoreSettings {
-  siteTitle: string;
+  siteTitle: string; // Browser Tab Title / SEO Title (e.g. Medimart BD | Promotional Offer)
+  storeName?: string; // Website / Store Brand Name
+  faviconUrl?: string; // Browser Tab Favicon Icon URL
   logoUrl?: string;
   primaryColor: string; // e.g., #059669
   accentColor: string;  // e.g., #d97706
@@ -161,6 +164,35 @@ export interface StoreSettings {
   adminPassword?: string;
   sectionOrder: string[]; // array of section IDs e.g. ['hero', 'media', 'scarcity', ...]
   sectionVisibility: Record<string, boolean>; // e.g. { hero: true, scarcity: true }
+
+  // Fraud Customer & Repeat Order Blocker Settings
+  enableRepeatOrderBlock?: boolean; // Default: true
+  repeatOrderCooldownMinutes?: number; // Default: 60 (Minutes after which customer can order again)
+  blockByPhone?: boolean; // Default: true
+  blockByIp?: boolean; // Default: true
+  blockByDevice?: boolean; // Default: true
+  repeatBlockMessage?: string; // Custom warning message shown to customer
+}
+
+export interface IncompleteOrderData {
+  id: string;
+  customerName: string;
+  phone: string;
+  address: string;
+  deliveryLocation?: 'inside' | 'outside';
+  productTitle: string;
+  quantity: number;
+  unitPrice: number;
+  deliveryFee: number;
+  discountAmount: number;
+  totalAmount: number;
+  ipAddress?: string;
+  deviceId?: string;
+  status: 'ABANDONED' | 'RECOVERED' | 'REJECTED';
+  recoveredOrderId?: string;
+  adminNote?: string;
+  lastActiveAt: string;
+  createdAt: string;
 }
 
 export interface CouponData {
@@ -172,10 +204,15 @@ export interface CouponData {
   isActive: boolean;
 }
 
+export type BlacklistType = 'PHONE' | 'IP' | 'DEVICE';
+
 export interface BlacklistEntry {
   id: string;
-  phone?: string;
+  type?: BlacklistType; // 'PHONE' | 'IP' | 'DEVICE'
+  value?: string; // Target phone, IP, or device fingerprint
+  phone?: string; // For backward compatibility
   ipAddress?: string;
+  deviceId?: string;
   reason: string;
   createdAt: string;
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   DollarSign, 
   ShoppingBag, 
@@ -22,6 +22,7 @@ import {
   Cell 
 } from 'recharts';
 import { OrderData } from '../../types';
+import { getLiveTimeAgo } from '../../utils/timeAgo';
 
 interface DashboardViewProps {
   orders: OrderData[];
@@ -29,6 +30,15 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ orders, onViewOrders }) => {
+  // Real-time ticking timestamp
+  const [nowMs, setNowMs] = useState<number>(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowMs(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
   // KPI Calculations
   const totalRevenue = orders
     .filter((o) => o.status === 'DELIVERED' || o.status === 'CONFIRMED' || o.status === 'SHIPPED')
@@ -277,6 +287,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ orders, onViewOrde
             <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-mono font-bold border-b border-slate-200">
               <tr>
                 <th className="p-3">অর্ডার আইডি</th>
+                <th className="p-3">সময় (লাইভ কাউন্টার)</th>
                 <th className="p-3">কাস্টমার নাম</th>
                 <th className="p-3">মোবাইল</th>
                 <th className="p-3">জেলা</th>
@@ -286,33 +297,49 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ orders, onViewOrde
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {orders.slice(0, 5).map((ord) => (
-                <tr key={ord.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-3 font-mono font-bold text-slate-900">{ord.orderNumber}</td>
-                  <td className="p-3 font-bold text-slate-800">{ord.customerName}</td>
-                  <td className="p-3 font-mono text-slate-600">{ord.phone}</td>
-                  <td className="p-3 text-slate-600">{ord.district}</td>
-                  <td className="p-3 font-mono font-bold text-emerald-600">৳{ord.totalAmount}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                        ord.riskLevel === 'HIGH'
-                          ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                          : ord.riskLevel === 'MEDIUM'
-                          ? 'bg-amber-50 text-amber-600 border border-amber-200'
-                          : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                      }`}
-                    >
-                      {ord.riskLevel}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono font-bold text-[10px] border border-slate-200">
-                      {ord.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {orders.slice(0, 5).map((ord) => {
+                const liveTime = getLiveTimeAgo(ord.createdAt, nowMs);
+
+                return (
+                  <tr key={ord.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="p-3 font-mono font-bold text-slate-900">{ord.orderNumber}</td>
+                    <td className="p-3">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
+                          liveTime.isJustNow
+                            ? 'bg-amber-50 text-amber-900 border-amber-300 animate-pulse'
+                            : 'bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        <Clock className="w-3 h-3 text-indigo-500" />
+                        <span>{liveTime.formatted}</span>
+                      </span>
+                    </td>
+                    <td className="p-3 font-bold text-slate-800">{ord.customerName}</td>
+                    <td className="p-3 font-mono text-slate-600">{ord.phone}</td>
+                    <td className="p-3 text-slate-600">{ord.district}</td>
+                    <td className="p-3 font-mono font-bold text-emerald-600">৳{ord.totalAmount}</td>
+                    <td className="p-3">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                          ord.riskLevel === 'HIGH'
+                            ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                            : ord.riskLevel === 'MEDIUM'
+                            ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                            : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                        }`}
+                      >
+                        {ord.riskLevel}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono font-bold text-[10px] border border-slate-200">
+                        {ord.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

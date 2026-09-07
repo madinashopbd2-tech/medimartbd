@@ -1,4 +1,4 @@
-import { ProductData, StoreSettings, ReviewData, FaqData, CouponData, OrderData } from '../types';
+import { ProductData, StoreSettings, ReviewData, FaqData, CouponData, OrderData, IncompleteOrderData } from '../types';
 
 export const INITIAL_PRODUCT: ProductData = {
   id: 'prod_01_ultra_watch',
@@ -66,6 +66,8 @@ export const INITIAL_SETTINGS: StoreSettings = {
   adminUsername: 'admin',
   adminPassword: 'Shakil123',
   siteTitle: 'Medimart BD | প্রমোশনাল অফার ও ক্যাশ অন ডেলিভারি',
+  storeName: 'Medimart BD',
+  faviconUrl: 'https://cdn-icons-png.flaticon.com/512/3081/3081559.png',
   logoUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=100&q=80',
   primaryColor: '#059669', // Emerald 600
   accentColor: '#d97706',  // Amber 600
@@ -101,6 +103,12 @@ export const INITIAL_SETTINGS: StoreSettings = {
     checkout: true,
     footer: true,
   },
+  enableRepeatOrderBlock: true,
+  repeatOrderCooldownMinutes: 60, // 1 hour cooldown by default
+  blockByPhone: true,
+  blockByIp: true,
+  blockByDevice: true,
+  repeatBlockMessage: 'আপনার একটি অর্ডার ইতিমধ্যে সফলভাবে গৃহীত হয়েছে! সিকিউরিটির স্বার্থে কিছুক্ষণ পর পুনরায় অর্ডার করতে পারবেন।',
 };
 
 export const INITIAL_REVIEWS: ReviewData[] = [
@@ -215,5 +223,42 @@ export const INITIAL_SAMPLE_ORDERS: OrderData[] = [
     eventId: 'purchase_ord_1002',
     isOtpVerified: true,
     createdAt: new Date(Date.now() - 3600 * 1000 * 5).toISOString(),
+  },
+];
+
+export const INITIAL_INCOMPLETE_ORDERS: IncompleteOrderData[] = [
+  {
+    id: 'inc_101',
+    customerName: 'তানভির হাসান',
+    phone: '01798765432',
+    address: 'বাড়ি ১২, রোড ৩, সেক্টর ৪, উত্তরা, ঢাকা',
+    deliveryLocation: 'inside',
+    productTitle: 'ProFlex Smart Orthopedic',
+    quantity: 1,
+    unitPrice: 1450,
+    deliveryFee: 70,
+    discountAmount: 0,
+    totalAmount: 1520,
+    status: 'ABANDONED',
+    adminNote: '',
+    lastActiveAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+  },
+  {
+    id: 'inc_102',
+    customerName: 'মোঃ শফিকুল ইসলাম',
+    phone: '01912349988',
+    address: 'চৌধুরী পাড়া, কুমিল্লা সদর',
+    deliveryLocation: 'outside',
+    productTitle: 'ProFlex Smart Orthopedic',
+    quantity: 2,
+    unitPrice: 1450,
+    deliveryFee: 130,
+    discountAmount: 100,
+    totalAmount: 2930,
+    status: 'ABANDONED',
+    adminNote: '',
+    lastActiveAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
   },
 ];

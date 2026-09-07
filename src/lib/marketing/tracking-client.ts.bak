@@ -26,16 +26,13 @@ let hasFiredPageView = false;
 let hasFiredViewContent = false;
 
 // Helpers to read and write first-party marketing cookies
-export function getCookie(name: string): string {
+function getCookie(name: string): string {
   if (typeof document === 'undefined') return '';
   const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
-  return match ? decodeURIComponent(match[3]).trim().replace(/^"|"$/g, '') : '';
+  return match ? decodeURIComponent(match[3]) : '';
 }
 
-// Alias for getCookie matching Meta nomenclature
-export const getMetaCookie = getCookie;
-
-export function setCookie(name: string, value: string, days = 90) {
+function setCookie(name: string, value: string, days = 90) {
   if (typeof document === 'undefined' || !value) return;
   try {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
@@ -43,56 +40,6 @@ export function setCookie(name: string, value: string, days = 90) {
   } catch (e) {
     // Cookie restricted
   }
-}
-
-/**
- * Retrieves any saved user data (phone, name, district, email) from form inputs or localStorage
- * for Advanced Matching on Meta Pixel and Conversions API.
- */
-export function getStoredUserData(): { phone?: string; name?: string; district?: string; email?: string } {
-  if (typeof window === 'undefined') return {};
-  let phone = '';
-  let name = '';
-  let district = '';
-  let email = '';
-
-  try {
-    phone = localStorage.getItem('_mkt_user_phone') || '';
-    name = localStorage.getItem('_mkt_user_name') || '';
-    district = localStorage.getItem('_mkt_user_district') || '';
-    email = localStorage.getItem('_mkt_user_email') || '';
-  } catch (e) {}
-
-  // Also probe active DOM input elements if user is currently filling out the form
-  if (!phone && typeof document !== 'undefined') {
-    const phoneInput = (document.querySelector('input[type="tel"]') || document.getElementById('phone')) as HTMLInputElement | null;
-    if (phoneInput?.value?.trim()) {
-      phone = phoneInput.value.trim();
-    }
-  }
-  if (!name && typeof document !== 'undefined') {
-    const nameInput = (document.getElementById('customerName') || document.querySelector('input[name="name"]')) as HTMLInputElement | null;
-    if (nameInput?.value?.trim()) {
-      name = nameInput.value.trim();
-    }
-  }
-
-  const result: { phone?: string; name?: string; district?: string; email?: string } = {};
-  if (phone) result.phone = phone;
-  if (name) result.name = name;
-  if (district) result.district = district;
-  if (email) result.email = email;
-  return result;
-}
-
-export function saveStoredUserData(data: { phone?: string; name?: string; district?: string; email?: string }) {
-  if (typeof window === 'undefined' || !data) return;
-  try {
-    if (data.phone) localStorage.setItem('_mkt_user_phone', data.phone.trim());
-    if (data.name) localStorage.setItem('_mkt_user_name', data.name.trim());
-    if (data.district) localStorage.setItem('_mkt_user_district', data.district.trim());
-    if (data.email) localStorage.setItem('_mkt_user_email', data.email.trim());
-  } catch (e) {}
 }
 
 export interface MarketingClickContext {
@@ -241,7 +188,6 @@ async function sendServerEvent(eventName: string, eventId: string, customData: a
   if (typeof window === 'undefined') return;
   try {
     const clickContext = getMarketingClickContext();
-    const storedUser = getStoredUserData();
     const mergedUserData = {
       fbp: clickContext.fbp,
       fbc: clickContext.fbc,
@@ -249,7 +195,6 @@ async function sendServerEvent(eventName: string, eventId: string, customData: a
       ttclid: clickContext.ttclid,
       gclid: clickContext.gclid,
       externalId: clickContext.externalId,
-      ...storedUser,
       ...userData,
     };
 
@@ -555,45 +500,14 @@ export function trackClientViewContent(product: ProductData) {
 }
 
 /**
- * 3. Track InitiateCheckout Event (with Advanced Matching Signals)
+ * 3. Track InitiateCheckout Event
  */
-export function trackClientInitiateCheckout(
-  productTitle: string,
-  value: number,
-  details?: any,
-  userData?: { phone?: string; name?: string; district?: string; email?: string }
-) {
+export function trackClientInitiateCheckout(productTitle: string, value: number, details?: any) {
   if (typeof window === 'undefined') return;
   const eventId = generateEventId('initiate_checkout');
 
-  // Resolve user matching parameters (explicit + stored/DOM)
-  if (userData) {
-    saveStoredUserData(userData);
-  }
-  const storedUser = getStoredUserData();
-  const resolvedUserData = {
-    ...storedUser,
-    ...userData,
-  };
-
-  // Meta Pixel with Advanced Matching parameters if phone/name present
+  // Meta Pixel
   if (window.fbq) {
-    if (resolvedUserData.phone || resolvedUserData.email) {
-      try {
-        const cleanPhone = resolvedUserData.phone ? resolvedUserData.phone.replace(/\D/g, '') : '';
-        const normalizedPhone = cleanPhone.startsWith('01') ? '88' + cleanPhone : cleanPhone;
-        const metaSettings = (window as any)._pixelInitializedSettings;
-        if (metaSettings?.metaPixelId) {
-          window.fbq('setUserProperties', metaSettings.metaPixelId, {
-            ph: normalizedPhone || undefined,
-            fn: resolvedUserData.name || undefined,
-            ct: resolvedUserData.district || undefined,
-            country: 'bd',
-          });
-        }
-      } catch (e) {}
-    }
-
     window.fbq(
       'track',
       'InitiateCheckout',
@@ -611,14 +525,6 @@ export function trackClientInitiateCheckout(
 
   // TikTok Pixel
   if (window.ttq) {
-    if (resolvedUserData.phone) {
-      try {
-        window.ttq.identify({
-          phone_number: resolvedUserData.phone,
-          name: resolvedUserData.name,
-        });
-      } catch (e) {}
-    }
     window.ttq.track(
       'InitiateCheckout',
       {
@@ -652,20 +558,15 @@ export function trackClientInitiateCheckout(
     event_id: eventId,
   });
 
-  // Server CAPI Backup with resolvedUserData
-  sendServerEvent(
-    'InitiateCheckout',
-    eventId,
-    {
-      value,
-      currency: 'BDT',
-      content_name: productTitle,
-      content_type: 'product',
-      content_ids: ['COD-PROD-01'],
-      ...details,
-    },
-    resolvedUserData
-  );
+  // Server CAPI Backup
+  sendServerEvent('InitiateCheckout', eventId, {
+    value,
+    currency: 'BDT',
+    content_name: productTitle,
+    content_type: 'product',
+    content_ids: ['COD-PROD-01'],
+    ...details,
+  });
 }
 
 /**

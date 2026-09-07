@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Star, CheckCircle, ThumbsUp, MessageSquarePlus } from 'lucide-react';
 import { ReviewData } from '../../types';
+import { trackClientInternalClick } from '../../lib/marketing/tracking-client';
 
 interface CustomerReviewsProps {
   reviews: ReviewData[];
@@ -55,7 +56,10 @@ export const CustomerReviews: React.FC<CustomerReviewsProps> = ({
           </div>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setShowModal(true);
+              trackClientInternalClick('Write_Review_Button', 'OpenModal');
+            }}
             className="px-5 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-emerald-600 transition-all flex items-center gap-2 cursor-pointer shadow-sm"
           >
             <MessageSquarePlus className="w-4 h-4 text-amber-400" />

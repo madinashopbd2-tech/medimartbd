@@ -15,9 +15,11 @@ import {
   RefreshCw,
   Image as ImageIcon,
   Film,
-  CheckCircle2
+  CheckCircle2,
+  Globe
 } from 'lucide-react';
 import { ProductData, StoreSettings } from '../../types';
+import { parseVideoUrl, cleanVideoInput } from '../../utils/video-embed';
 
 interface CmsBuilderViewProps {
   product: ProductData;
@@ -174,6 +176,58 @@ export const CmsBuilderView: React.FC<CmsBuilderViewProps> = ({
                   <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-bold border border-emerald-500/20">
                     ১০০% কাস্টমাইজেবল
                   </span>
+                </div>
+
+                {/* 0. Browser Tab Title & Website Identity */}
+                <div className="bg-[#121215] p-4 rounded-xl border border-indigo-500/30 space-y-3 shadow-[0_0_15px_rgba(99,102,241,0.08)]">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                      <Globe className="w-4 h-4 text-indigo-400" />
+                      ব্রাউজার ট্যাব টাইটেল ও ওয়েবসাইট নাম (Browser Tab Title & SEO)
+                    </h4>
+                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-full">
+                      ট্যাবের নাম
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-200 mb-1">
+                      ব্রাউজার ট্যাব টাইটেল (Browser Tab / Page Title) <span className="text-rose-400 font-bold">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.siteTitle || ''}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, siteTitle: e.target.value })}
+                      placeholder="যেমন: Prime Test 90 Piece Capsules | 100% Original বা Medimart BD"
+                      className="w-full px-3.5 py-2.5 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white font-bold outline-none focus:border-indigo-500 transition-all"
+                    />
+                    <p className="text-[10px] text-zinc-400 mt-1">
+                      গুগল ব্রাউজারের ওপরের ট্যাবে এই নামটি প্রদর্শিত হবে।
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 mb-1">ওয়েবসাইট / ব্র্যান্ডের নাম</label>
+                      <input
+                        type="text"
+                        value={settingsForm.storeName || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, storeName: e.target.value })}
+                        placeholder="যেমন: Medimart BD বা Prime Test"
+                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs text-white outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 mb-1">ফ্যাভিকন আইকন লিঙ্ক (Tab Icon URL)</label>
+                      <input
+                        type="text"
+                        value={settingsForm.faviconUrl || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, faviconUrl: e.target.value })}
+                        placeholder="https://.../icon.png"
+                        className="w-full px-3.5 py-2 bg-[#09090b] rounded-xl border border-[#27272a] text-xs font-mono text-white outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* 1. Basic Product Info & Pricing */}
@@ -752,55 +806,82 @@ export const CmsBuilderView: React.FC<CmsBuilderViewProps> = ({
                   <div>
                     <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                       <Film className="w-4 h-4 text-amber-400" />
-                      ২. প্রোডাক্ট ভিডিও লিংক (YouTube / MP4 Video URL)
+                      ২. প্রোডাক্ট ভিডিও লিংক (Universal Video Support)
                     </h4>
                     <p className="text-[11px] text-zinc-400 mt-0.5">
-                      ইউটিউব ভিডিও লিংক (যেমন: https://www.youtube.com/watch?v=... বা https://youtu.be/...) অথবা ডাইরেক্ট .mp4 লিংক বসান।
+                      যেকোনো ভিডিও লিংক বা এমবেড কোড পেস্ট করুন: YouTube, Facebook Video/Reels, Google Drive, TikTok, Instagram Reel, Vimeo অথবা ডাইরেক্ট .mp4 লিংক।
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-bold text-zinc-400 mb-1">ভিডিও রিভিউ লিংক (URL)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-zinc-400">ভিডিও লিংক (URL বা Embed Code)</label>
+                        {productForm.videoUrl && (() => {
+                          const parsed = parseVideoUrl(productForm.videoUrl);
+                          return (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              ✓ {parsed.platformName} সনাক্ত হয়েছে
+                            </span>
+                          );
+                        })()}
+                      </div>
                       <input
                         type="text"
                         value={productForm.videoUrl || ''}
                         onChange={(e) => {
-                          const updated = { ...productForm, videoUrl: e.target.value };
+                          const cleaned = cleanVideoInput(e.target.value);
+                          const updated = { ...productForm, videoUrl: cleaned };
                           setProductForm(updated);
                           onSaveProduct(updated);
                         }}
-                        placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                        placeholder="ইউটিউব, ফেসবুক, ড্রাইভ বা MP4 লিংক পেস্ট করুন..."
                         className="w-full px-3.5 py-2.5 bg-[#09090b] rounded-xl border border-[#27272a] text-xs font-mono text-amber-300 outline-none focus:border-amber-500"
                       />
                     </div>
 
+                    {/* Supported Platforms Hint Chips */}
+                    <div className="flex flex-wrap gap-1.5 text-[10px]">
+                      <span className="px-2 py-0.5 bg-red-500/10 text-red-400 rounded-md border border-red-500/20">YouTube</span>
+                      <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-md border border-blue-500/20">Facebook / Reels</span>
+                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">Google Drive</span>
+                      <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-md border border-cyan-500/20">TikTok</span>
+                      <span className="px-2 py-0.5 bg-pink-500/10 text-pink-400 rounded-md border border-pink-500/20">Instagram</span>
+                      <span className="px-2 py-0.5 bg-sky-500/10 text-sky-400 rounded-md border border-sky-500/20">Vimeo</span>
+                      <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-md border border-purple-500/20">Direct MP4 / Dropbox</span>
+                    </div>
+
                     {/* Video Player Preview Box in Admin */}
-                    {productForm.videoUrl && (
-                      <div className="p-3 bg-[#09090b] rounded-xl border border-[#27272a] space-y-2">
-                        <span className="text-[10px] font-bold text-zinc-400 block">ভিডিও লাইভ প্রিভিউ (Test):</span>
-                        <div className="aspect-video w-full rounded-lg overflow-hidden bg-black border border-[#27272a] relative">
-                          {productForm.videoUrl.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) ? (
-                            <video src={productForm.videoUrl} controls className="w-full h-full object-contain" />
-                          ) : (
-                            <iframe
-                              src={
-                                productForm.videoUrl.includes('youtu.be/')
-                                  ? `https://www.youtube.com/embed/${productForm.videoUrl.split('youtu.be/')[1]?.split('?')[0]}?rel=0`
-                                  : productForm.videoUrl.includes('watch?v=')
-                                  ? `https://www.youtube.com/embed/${productForm.videoUrl.split('watch?v=')[1]?.split('&')[0]}?rel=0`
-                                  : productForm.videoUrl.includes('youtube.com/shorts/')
-                                  ? `https://www.youtube.com/embed/${productForm.videoUrl.split('youtube.com/shorts/')[1]?.split('?')[0]}?rel=0`
-                                  : productForm.videoUrl
-                              }
-                              title="Video Preview"
-                              className="w-full h-full border-0"
-                              allowFullScreen
-                            />
-                          )}
+                    {productForm.videoUrl && (() => {
+                      const parsed = parseVideoUrl(productForm.videoUrl);
+                      return (
+                        <div className="p-3 bg-[#09090b] rounded-xl border border-[#27272a] space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-zinc-400 block">
+                              ভিডিও লাইভ প্রিভিউ ({parsed.platformName}):
+                            </span>
+                            {parsed.type === 'googledrive' && (
+                              <span className="text-[9px] text-amber-400/90">
+                                ⚠️ ড্রাইভে ফাইল শেয়ারে "Anyone with link" নিশ্চিত করুন
+                              </span>
+                            )}
+                          </div>
+                          <div className="aspect-video w-full rounded-lg overflow-hidden bg-black border border-[#27272a] relative">
+                            {parsed.isDirectVideo ? (
+                              <video src={parsed.embedUrl} controls className="w-full h-full object-contain" />
+                            ) : (
+                              <iframe
+                                src={parsed.embedUrl}
+                                title="Video Preview"
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
