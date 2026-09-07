@@ -73,9 +73,9 @@ export const INITIAL_SETTINGS: StoreSettings = {
   accentColor: '#d97706',  // Amber 600
   deliveryFeeInside: 70,
   deliveryFeeOutside: 130,
-  metaPixelId: '123456789098765',
-  metaCapiToken: 'EAA1234567890_SAMPLE_META_ACCESS_TOKEN_FOR_CAPI_TESTING',
-  metaTestEventCode: 'TEST12345',
+  metaPixelId: '1516207809463394',
+  metaCapiToken: '',
+  metaTestEventCode: '',
   metaDomainVerification: '',
   tikTokPixelId: 'TT-987654321',
   tikTokAccessToken: '',
