@@ -228,7 +228,11 @@ export async function sendMetaCapiEvent(
 
   const summaryStr = `Val: ৳${customData.value}, EventID: ${eventId}, User: ${userData.name || 'Anon'}`;
 
-  if (!pixelId || !accessToken) {
+  const cleanPixelId = (pixelId || '').trim();
+  const cleanAccessToken = (accessToken || '').trim();
+  const cleanTestCode = (testEventCode || '').trim();
+
+  if (!cleanPixelId || !cleanAccessToken) {
     const simLog = addMarketingLog({
       platform: 'Meta CAPI',
       eventId,
@@ -242,16 +246,32 @@ export async function sendMetaCapiEvent(
     return { success: true, log: simLog };
   }
 
+  if (cleanTestCode) {
+    formattedPayload.test_event_code = cleanTestCode;
+  }
+
   try {
-    const url = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`;
+    let url = `https://graph.facebook.com/v19.0/${cleanPixelId}/events?access_token=${encodeURIComponent(cleanAccessToken)}`;
+    if (cleanTestCode) {
+      url += `&test_event_code=${encodeURIComponent(cleanTestCode)}`;
+    }
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cleanAccessToken}`,
+      },
       body: JSON.stringify(formattedPayload),
     });
 
-    const resData = await response.json();
-    const isOk = response.ok;
+    const resData: any = await response.json();
+    const isOk = response.ok && !resData.error;
+
+    console.log(`[Meta CAPI] Dispatch ${eventName} [${eventId}] -> HTTP ${response.status} (Events: ${resData?.events_received ?? 'N/A'})`);
+    if (!isOk) {
+      console.error('[Meta CAPI Error]', JSON.stringify(resData.error || resData));
+    }
 
     const log = addMarketingLog({
       platform: 'Meta CAPI',
@@ -266,6 +286,7 @@ export async function sendMetaCapiEvent(
 
     return { success: isOk, log };
   } catch (err: any) {
+    console.error('[Meta CAPI Exception]', err);
     const log = addMarketingLog({
       platform: 'Meta CAPI',
       eventId,
@@ -493,23 +514,28 @@ export async function dispatchAllServerMarketingEvents(
   settings: any,
   payload: MarketingEventPayload
 ) {
+  const safeSettings = settings || {};
+  const metaPixelId = safeSettings.metaPixelId || safeSettings.pixelId || '';
+  const metaToken = safeSettings.metaCapiToken || safeSettings.metaCapiAccessToken || safeSettings.metaAccessToken || '';
+  const metaTestCode = safeSettings.metaTestEventCode || safeSettings.testEventCode || '';
+
   const metaPromise = sendMetaCapiEvent(
-    settings.metaPixelId,
-    settings.metaCapiToken,
+    metaPixelId,
+    metaToken,
     payload,
-    settings.metaTestEventCode
+    metaTestCode
   );
 
   const tikTokPromise = sendTikTokEventsApi(
-    settings.tikTokPixelId,
-    settings.tikTokAccessToken,
+    safeSettings.tikTokPixelId || safeSettings.ttPixelId || '',
+    safeSettings.tikTokAccessToken || safeSettings.tikTokEventsApiToken || '',
     payload,
-    settings.tikTokTestEventCode
+    safeSettings.tikTokTestEventCode || ''
   );
 
   const ga4Promise = sendGa4MeasurementApi(
-    settings.gaMeasurementId,
-    settings.gaApiSecret,
+    safeSettings.gaMeasurementId || '',
+    safeSettings.gaApiSecret || '',
     payload
   );
 

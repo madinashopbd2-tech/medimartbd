@@ -253,6 +253,8 @@ async function sendServerEvent(eventName: string, eventId: string, customData: a
       ...userData,
     };
 
+    const activeSettings = (window as any)._pixelInitializedSettings || undefined;
+
     fetch('/api/marketing/event', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -260,6 +262,7 @@ async function sendServerEvent(eventName: string, eventId: string, customData: a
         eventName,
         eventId,
         eventSourceUrl: window.location.href,
+        settings: activeSettings,
         customData: {
           utm_source: clickContext.utmSource || undefined,
           utm_medium: clickContext.utmMedium || undefined,
@@ -331,6 +334,8 @@ export function initTrackingScripts(settings: StoreSettings, product?: ProductDa
         s.parentNode.insertBefore(t, s);
       })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
 
+      window.fbq('init', pixelId);
+    } else if (window.fbq) {
       window.fbq('init', pixelId);
     }
   }
@@ -552,6 +557,99 @@ export function trackClientViewContent(product: ProductData) {
     content_type: 'product',
     content_ids: ['COD-PROD-01'],
   });
+}
+
+/**
+ * 2.5. Track AddToCart Event (with 100% Server CAPI Deduplication)
+ */
+export function trackClientAddToCart(
+  productTitle: string,
+  value: number,
+  quantity = 1,
+  details?: any,
+  userData?: { phone?: string; name?: string; district?: string; email?: string }
+) {
+  if (typeof window === 'undefined') return;
+  const eventId = generateEventId('add_to_cart');
+
+  if (userData) {
+    saveStoredUserData(userData);
+  }
+  const storedUser = getStoredUserData();
+  const resolvedUserData = {
+    ...storedUser,
+    ...userData,
+  };
+
+  // 1. Meta Pixel (Browser)
+  if (window.fbq) {
+    window.fbq(
+      'track',
+      'AddToCart',
+      {
+        value,
+        currency: 'BDT',
+        content_name: productTitle,
+        content_type: 'product',
+        content_ids: ['COD-PROD-01'],
+        num_items: quantity,
+        ...details,
+      },
+      { eventID: eventId }
+    );
+  }
+
+  // 2. TikTok Pixel
+  if (window.ttq) {
+    window.ttq.track(
+      'AddToCart',
+      {
+        value,
+        currency: 'BDT',
+        content_name: productTitle,
+        content_type: 'product',
+        content_id: 'COD-PROD-01',
+        quantity,
+      },
+      { event_id: eventId }
+    );
+  }
+
+  // 3. GA4
+  if (window.gtag) {
+    window.gtag('event', 'add_to_cart', {
+      value,
+      currency: 'BDT',
+      items: [{ item_id: 'COD-PROD-01', item_name: productTitle, price: value, quantity }],
+    });
+  }
+
+  // 4. GTM
+  window.dataLayer?.push({
+    event: 'add_to_cart',
+    ecommerce: {
+      value,
+      currency: 'BDT',
+      items: [{ item_id: 'COD-PROD-01', item_name: productTitle, price: value, quantity }],
+    },
+    event_id: eventId,
+  });
+
+  // 5. Server CAPI Backup
+  sendServerEvent(
+    'AddToCart',
+    eventId,
+    {
+      value,
+      currency: 'BDT',
+      content_name: productTitle,
+      content_type: 'product',
+      content_ids: ['COD-PROD-01'],
+      num_items: quantity,
+      ...details,
+    },
+    resolvedUserData
+  );
 }
 
 let hasInitiatedCheckoutInSession = false;
@@ -1126,4 +1224,29 @@ export function trackClientPurchase(
       ],
     },
   });
+
+  // 5. Server CAPI Backup with identical eventId for 100% Deduplication
+  const storedUser = getStoredUserData();
+  const purchaseUserData = {
+    ...storedUser,
+    phone: order.phone,
+    name: order.customerName,
+    address: order.address,
+    district: order.district,
+  };
+
+  sendServerEvent(
+    'Purchase',
+    eventId,
+    {
+      value: order.totalAmount,
+      currency: 'BDT',
+      content_name: productTitle,
+      content_type: 'product',
+      content_ids: ['COD-PROD-01'],
+      num_items: order.quantity,
+      order_id: order.orderNumber,
+    },
+    purchaseUserData
+  );
 }

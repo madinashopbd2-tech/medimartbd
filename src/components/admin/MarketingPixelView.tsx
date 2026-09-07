@@ -35,6 +35,7 @@ import {
   trackClientScrollDepth,
   trackClientInternalClick,
   trackClientViewContent,
+  trackClientAddToCart,
   trackClientOutboundClick,
   trackClientPurchase,
   getMarketingClickContext,
@@ -153,6 +154,19 @@ export const MarketingPixelView: React.FC<MarketingPixelViewProps> = ({
   const handleFireSingleTestEvent = async (eventName: string) => {
     setTestingEvent(eventName);
     try {
+      // Auto save current form to backend to ensure credentials are fully synced
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        onSaveSettings(form);
+      } catch (e) {}
+
+      // Ensure scripts and form settings are active
+      initTrackingScripts(form);
+
       if (eventName === 'PageView') {
         trackClientPageView();
       } else if (eventName === 'ViewContent') {
@@ -170,8 +184,18 @@ export const MarketingPixelView: React.FC<MarketingPixelViewProps> = ({
           instructions: [],
         };
         trackClientViewContent(dummyProd);
+      } else if (eventName === 'AddToCart') {
+        trackClientAddToCart('ProFlex Smart Orthopedic', 1450, 1, undefined, {
+          phone: '01712345678',
+          name: 'Test Customer',
+          district: 'Dhaka',
+        });
       } else if (eventName === 'InitiateCheckout') {
-        trackClientInitiateCheckout('ProFlex Smart Orthopedic', 1450);
+        trackClientInitiateCheckout('ProFlex Smart Orthopedic', 1450, undefined, {
+          phone: '01712345678',
+          name: 'Test Customer',
+          district: 'Dhaka',
+        }, true);
       } else if (eventName === 'WatchVideo') {
         trackClientWatchVideo('Product Demo Video - ProFlex Orthopedic', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
       } else if (eventName === 'PageScroll') {
@@ -206,7 +230,7 @@ export const MarketingPixelView: React.FC<MarketingPixelViewProps> = ({
         };
         trackClientPurchase(dummyOrder, 'ProFlex Smart Orthopedic', form.googleAdsConversionId);
       }
-      setTimeout(fetchLogs, 500);
+      setTimeout(fetchLogs, 600);
     } catch (e) {
       console.error('Test event trigger error:', e);
     } finally {
@@ -219,14 +243,15 @@ export const MarketingPixelView: React.FC<MarketingPixelViewProps> = ({
     const eventList = [
       'PageView',
       'ViewContent',
+      'AddToCart',
+      'InitiateCheckout',
+      'Purchase',
       'WatchVideo',
       'PageScroll',
       'ScrollDepth',
       'TimeOnPage',
       'InternalClick',
       'OutboundClick',
-      'InitiateCheckout',
-      'Purchase'
     ];
     for (const evt of eventList) {
       await handleFireSingleTestEvent(evt);
@@ -786,16 +811,17 @@ export const MarketingPixelView: React.FC<MarketingPixelViewProps> = ({
 
             <div className="grid grid-cols-2 gap-1.5">
               {[
-                { name: 'PageView', label: '1. PageView', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
-                { name: 'ViewContent', label: '2. View content', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
-                { name: 'WatchVideo', label: '3. WatchVideo', color: 'bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/30 text-indigo-300' },
-                { name: 'PageScroll', label: '4. PageScroll', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
-                { name: 'ScrollDepth', label: '5. ScrollDepth', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
-                { name: 'TimeOnPage', label: '6. TimeOnPage', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
-                { name: 'InternalClick', label: '7. InternalClick', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
-                { name: 'OutboundClick', label: '8. OutboundClick', color: 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300' },
-                { name: 'InitiateCheckout', label: '9. Initiate checkout', color: 'bg-amber-950/80 hover:bg-amber-900 border border-amber-500/30 text-amber-300' },
-                { name: 'Purchase', label: '10. Purchase', color: 'bg-rose-950/80 hover:bg-rose-900 border border-rose-500/30 text-rose-300' },
+                { name: 'PageView', label: '1. PageView', color: 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300' },
+                { name: 'ViewContent', label: '2. View content', color: 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300' },
+                { name: 'AddToCart', label: '3. Add to cart', color: 'bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300' },
+                { name: 'InitiateCheckout', label: '4. Initiate checkout', color: 'bg-amber-950/80 hover:bg-amber-900 border border-amber-500/30 text-amber-300' },
+                { name: 'Purchase', label: '5. Purchase', color: 'bg-rose-950/80 hover:bg-rose-900 border border-rose-500/30 text-rose-300' },
+                { name: 'WatchVideo', label: '6. WatchVideo', color: 'bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/30 text-indigo-300' },
+                { name: 'PageScroll', label: '7. PageScroll', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
+                { name: 'ScrollDepth', label: '8. ScrollDepth', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
+                { name: 'TimeOnPage', label: '9. TimeOnPage', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
+                { name: 'InternalClick', label: '10. InternalClick', color: 'bg-slate-800 hover:bg-slate-700 text-slate-200' },
+                { name: 'OutboundClick', label: '11. OutboundClick', color: 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300' },
               ].map((item) => (
                 <button
                   key={item.name}
@@ -816,67 +842,58 @@ export const MarketingPixelView: React.FC<MarketingPixelViewProps> = ({
           </div>
 
           <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-            {/* Mock/Live Events display list matching user's design screenshot */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1 font-mono">
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-emerald-700">Google - Purchase</span>
-                <span className="text-[10px] text-slate-400">ORD-5882</span>
+            {logs.length === 0 ? (
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center text-xs text-slate-500 font-sans">
+                এখনও কোনো সার্ভার ইভেন্ট লগ তৈরি হয়নি। উপরের <span className="font-bold text-emerald-600">সব ১০টি ইভেন্ট ফায়ার করুন</span> বাটনে ক্লিক করে টেস্ট করুন।
               </div>
-              <p className="text-[11px] text-slate-600 break-all bg-white p-2 rounded border border-slate-100">
-                {`{"ga4_id":"${form.gaMeasurementId || 'G-X1Y2Z3W4V5'}","transaction_id":"ORD-5882","value":1720}`}
-              </p>
-              <div className="text-[10px] text-slate-400 text-right">20:44:44</div>
-            </div>
+            ) : (
+              logs.map((log) => (
+                <div
+                  key={log.id}
+                  className={`p-3 rounded-xl border text-xs space-y-1.5 font-mono ${
+                    log.status === 'SUCCESS'
+                      ? 'bg-emerald-950/20 border-emerald-500/40 text-slate-800'
+                      : log.status === 'FAILED'
+                      ? 'bg-rose-950/20 border-rose-500/40 text-slate-800'
+                      : 'bg-slate-900 border-slate-800 text-slate-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span
+                      className={`font-bold flex items-center gap-1.5 ${
+                        log.platform === 'Meta CAPI'
+                          ? 'text-blue-600'
+                          : log.platform === 'TikTok Events API'
+                          ? 'text-cyan-600'
+                          : 'text-emerald-600'
+                      }`}
+                    >
+                      {log.platform} - {log.eventName}
+                    </span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                        log.status === 'SUCCESS'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : log.status === 'FAILED'
+                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                      }`}
+                    >
+                      {log.status} ({log.statusCode})
+                    </span>
+                  </div>
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1 font-mono">
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-cyan-700">TikTok - CompletePayment</span>
-                <span className="text-[10px] text-slate-400">ORD-5882</span>
-              </div>
-              <p className="text-[11px] text-slate-600 break-all bg-white p-2 rounded border border-slate-100">
-                {`{"req":{"pixel_code":"${form.tikTokPixelId || 'C12345678901'}","event":"CompletePayment"}}`}
-              </p>
-              <div className="text-[10px] text-slate-400 text-right">20:44:44</div>
-            </div>
+                  <p className="text-[11px] text-slate-600 bg-white/80 p-2 rounded border border-slate-200/60 break-all">
+                    {log.responseMessage || log.payloadSummary}
+                  </p>
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1 font-mono">
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-blue-700">Meta - Purchase</span>
-                <span className="text-[10px] text-slate-400">ORD-5882</span>
-              </div>
-              <p className="text-[11px] text-slate-600 break-all bg-white p-2 rounded border border-slate-100">
-                {`{"req":{"data":[{"event_name":"Purchase","event_time":1785077884,"event_id":"evt_9812"}]}}`}
-              </p>
-              <div className="text-[10px] text-slate-400 text-right">20:44:44</div>
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1 font-mono">
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-indigo-700">Meta - InitiateCheckout</span>
-                <span className="text-[10px] text-slate-400">ORD-5882</span>
-              </div>
-              <p className="text-[11px] text-slate-600 break-all bg-white p-2 rounded border border-slate-100">
-                {`{"value":1720,"currency":"BDT","content_name":"ProFlex Smart Orthopedic"}`}
-              </p>
-              <div className="text-[10px] text-slate-400 text-right">20:44:44</div>
-            </div>
-
-            {/* CAPI Memory Logs */}
-            {logs.map((log) => (
-              <div key={log.id} className="p-3 bg-slate-900 text-slate-100 rounded-xl border border-slate-800 text-xs space-y-1 font-mono">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-amber-400">Server CAPI - {log.eventName}</span>
-                  <span className="text-[10px] text-slate-400">{log.eventId}</span>
+                  <div className="text-[10px] text-slate-400 flex justify-between items-center">
+                    <span className="truncate max-w-[180px]">ID: {log.eventId}</span>
+                    <span>{log.timestamp}</span>
+                  </div>
                 </div>
-                <p className="text-[10px] text-slate-300 break-all">
-                  {log.payloadSummary}
-                </p>
-                <div className="text-[10px] text-slate-400 flex justify-between">
-                  <span>Status: {log.status} ({log.statusCode})</span>
-                  <span>{log.timestamp}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -239,9 +239,18 @@ async function startServer() {
   // Direct Server CAPI Event Dispatcher (for PageView, ViewContent, InitiateCheckout, WatchVideo, PageScroll, TimeOnPage, ScrollDepth, InternalClick, OutboundClick)
   app.post('/api/marketing/event', async (req, res) => {
     try {
-      const { eventName, eventId, customData = {}, userData = {}, eventSourceUrl } = req.body;
+      const { eventName, eventId, customData = {}, userData = {}, eventSourceUrl, settings } = req.body;
       if (!eventName) {
         return res.status(400).json({ success: false, error: 'eventName is required' });
+      }
+
+      // Merge client-sent settings with currentSettings
+      if (settings && typeof settings === 'object') {
+        currentSettings = {
+          ...currentSettings,
+          ...settings,
+        };
+        saveData();
       }
 
       // 1. Resolve real client IP across Cloudflare, Nginx, and direct proxies
