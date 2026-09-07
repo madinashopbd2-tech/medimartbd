@@ -261,15 +261,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 type="text"
                 required
                 value={customerName}
-                onFocus={() => {
-                  trackClientInitiateCheckout(
-                    product.title,
-                    grandTotal,
-                    { trigger: 'NameInputFocus' },
-                    { name: customerName.trim(), phone: phone.trim() }
-                  );
-                  trackClientInternalClick('Input_CustomerName', 'Focus');
-                }}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="যেমন: মোঃ সাকিব হাসান"
                 className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-900 text-sm"
@@ -285,26 +276,6 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 type="tel"
                 required
                 value={phone}
-                onFocus={() => {
-                  trackClientInitiateCheckout(
-                    product.title,
-                    grandTotal,
-                    { trigger: 'PhoneInputFocus' },
-                    { name: customerName.trim(), phone: phone.trim() }
-                  );
-                  trackClientInternalClick('Input_Phone', 'Focus');
-                }}
-                onBlur={() => {
-                  const cleaned = phone.replace(/\D/g, '');
-                  if (cleaned.length >= 11) {
-                    trackClientInitiateCheckout(
-                      product.title,
-                      grandTotal,
-                      { trigger: 'PhoneInputComplete' },
-                      { name: customerName.trim(), phone: cleaned }
-                    );
-                  }
-                }}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="যেমন: 01712345678"
                 className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-900 text-sm font-medium"

@@ -554,6 +554,9 @@ export function trackClientViewContent(product: ProductData) {
   });
 }
 
+let hasInitiatedCheckoutInSession = false;
+let lastInitiateCheckoutTime = 0;
+
 /**
  * 3. Track InitiateCheckout Event (with Advanced Matching Signals)
  */
@@ -561,9 +564,32 @@ export function trackClientInitiateCheckout(
   productTitle: string,
   value: number,
   details?: any,
-  userData?: { phone?: string; name?: string; district?: string; email?: string }
+  userData?: { phone?: string; name?: string; district?: string; email?: string },
+  force: boolean = false
 ) {
   if (typeof window === 'undefined') return;
+
+  if (userData) {
+    saveStoredUserData(userData);
+  }
+
+  // Deduplication guard: InitiateCheckout must ONLY fire once per session (15 min window)
+  const now = Date.now();
+  let sessionSent = false;
+  try {
+    sessionSent = sessionStorage.getItem('mkt_initiate_checkout_fired') === '1';
+  } catch (e) {}
+
+  if (!force && (hasInitiatedCheckoutInSession || sessionSent) && (now - lastInitiateCheckoutTime < 15 * 60 * 1000)) {
+    return;
+  }
+
+  hasInitiatedCheckoutInSession = true;
+  lastInitiateCheckoutTime = now;
+  try {
+    sessionStorage.setItem('mkt_initiate_checkout_fired', '1');
+  } catch (e) {}
+
   const eventId = generateEventId('initiate_checkout');
 
   // Resolve user matching parameters (explicit + stored/DOM)

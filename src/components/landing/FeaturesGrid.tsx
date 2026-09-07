@@ -15,7 +15,8 @@ import {
   Flame,
   Shield,
   Activity,
-  Check
+  Check,
+  PackageCheck
 } from 'lucide-react';
 import { ProductData } from '../../types';
 
@@ -39,7 +40,8 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Flame,
   Shield,
   Activity,
-  Check
+  Check,
+  PackageCheck
 };
 
 export const FeaturesGrid: React.FC<FeaturesGridProps> = ({ product }) => {

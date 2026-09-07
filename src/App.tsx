@@ -251,11 +251,6 @@ export default function App() {
         const rect = formEl.getBoundingClientRect();
         if (rect.top <= window.innerHeight * 0.85) {
           formReached = true;
-          trackClientScrollDepth(100, 'OrderFormSection');
-          trackClientPageScroll(100, 'OrderFormSection');
-          if (product) {
-            trackClientInitiateCheckout(product.title, product.offerPrice || product.regularPrice, { trigger: 'ScrollToForm' });
-          }
         }
       }
     };
