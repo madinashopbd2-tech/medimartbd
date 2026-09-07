@@ -27,6 +27,7 @@ import {
 import { StoreSettings } from '../../types';
 import { capiLogsMemory, CapiLogEntry } from '../../lib/marketing/meta-capi';
 import {
+  initTrackingScripts,
   trackClientWatchVideo,
   trackClientPageView,
   trackClientInitiateCheckout,

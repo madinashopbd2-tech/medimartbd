@@ -229,38 +229,54 @@ export async function sendMetaCapiEvent(
   const summaryStr = `Val: ৳${customData.value}, EventID: ${eventId}, User: ${userData.name || 'Anon'}`;
 
   const cleanPixelId = (pixelId || '').trim();
-  const cleanAccessToken = (accessToken || '').trim();
-  const cleanTestCode = (testEventCode || '').trim();
+  let cleanAccessToken = (accessToken || '').trim();
 
-  if (!cleanPixelId || !cleanAccessToken) {
+  // Sanitize access token: strip quotes, newlines, tabs, spaces, and 'Bearer ' prefix
+  cleanAccessToken = cleanAccessToken.replace(/^["']|["']$/g, '').trim();
+  if (cleanAccessToken.toLowerCase().startsWith('bearer ')) {
+    cleanAccessToken = cleanAccessToken.slice(7).trim();
+  }
+  cleanAccessToken = cleanAccessToken.replace(/[\r\n\t\s]+/g, '');
+
+  const cleanTestCode = (testEventCode || '').trim().replace(/[\r\n\t\s]+/g, '');
+
+  // Check if token is missing or obvious placeholder/test text
+  const isDummyToken =
+    !cleanAccessToken ||
+    cleanAccessToken.length < 35 ||
+    cleanAccessToken.toLowerCase().includes('dummy') ||
+    cleanAccessToken.toLowerCase().includes('demo') ||
+    cleanAccessToken.toLowerCase().endsWith('test');
+
+  if (!cleanPixelId || isDummyToken) {
     const simLog = addMarketingLog({
       platform: 'Meta CAPI',
       eventId,
       eventName,
       status: 'SIMULATED',
       statusCode: 200,
-      responseMessage: 'Simulated Meta CAPI (Set Meta Pixel ID & Access Token in Settings to enable live dispatch)',
+      responseMessage: !cleanAccessToken
+        ? 'Simulated Meta CAPI (Meta Pixel ID ও Access Token সেট করুন)'
+        : 'Simulated Meta CAPI (সঠিক দীর্ঘ Access Token প্রদান করুন)',
       payloadSummary: summaryStr,
       rawPayload: formattedPayload,
     });
     return { success: true, log: simLog };
   }
 
+  // Set access token and test event code in payload
+  formattedPayload.access_token = cleanAccessToken;
   if (cleanTestCode) {
     formattedPayload.test_event_code = cleanTestCode;
   }
 
   try {
-    let url = `https://graph.facebook.com/v19.0/${cleanPixelId}/events?access_token=${encodeURIComponent(cleanAccessToken)}`;
-    if (cleanTestCode) {
-      url += `&test_event_code=${encodeURIComponent(cleanTestCode)}`;
-    }
+    const url = `https://graph.facebook.com/v19.0/${cleanPixelId}/events`;
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${cleanAccessToken}`,
       },
       body: JSON.stringify(formattedPayload),
     });
@@ -268,10 +284,16 @@ export async function sendMetaCapiEvent(
     const resData: any = await response.json();
     const isOk = response.ok && !resData.error;
 
-    console.log(`[Meta CAPI] Dispatch ${eventName} [${eventId}] -> HTTP ${response.status} (Events: ${resData?.events_received ?? 'N/A'})`);
-    if (!isOk) {
-      console.error('[Meta CAPI Error]', JSON.stringify(resData.error || resData));
+    let responseMsg = '';
+    if (isOk) {
+      responseMsg = `Events Received: ${resData.events_received || 1}`;
+    } else if (resData?.error?.code === 190) {
+      responseMsg = `ইনভ্যালিড মেটা টোকেন (OAuth 190): মেটা ইভেন্ট ম্যানেজার থেকে নতুন Access Token জেনারেট করে সেভ করুন।`;
+    } else {
+      responseMsg = resData?.error?.message || JSON.stringify(resData);
     }
+
+    console.log(`[Meta CAPI] Dispatch ${eventName} [${eventId}] -> HTTP ${response.status} (${isOk ? 'Success' : responseMsg})`);
 
     const log = addMarketingLog({
       platform: 'Meta CAPI',
@@ -279,14 +301,14 @@ export async function sendMetaCapiEvent(
       eventName,
       status: isOk ? 'SUCCESS' : 'FAILED',
       statusCode: response.status,
-      responseMessage: isOk ? `Events Received: ${resData.events_received || 1}` : JSON.stringify(resData.error || resData),
+      responseMessage: responseMsg,
       payloadSummary: summaryStr,
       rawPayload: formattedPayload,
     });
 
     return { success: isOk, log };
   } catch (err: any) {
-    console.error('[Meta CAPI Exception]', err);
+    console.warn(`[Meta CAPI Network Error] ${err?.message || err}`);
     const log = addMarketingLog({
       platform: 'Meta CAPI',
       eventId,
