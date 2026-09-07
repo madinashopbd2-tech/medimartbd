@@ -286,6 +286,29 @@ export function generateEventId(prefix: string): string {
 }
 
 /**
+ * Build Meta Pixel event options including eventID and test_event_code (if active)
+ */
+export function getMetaEventOptions(eventId: string) {
+  const options: { eventID: string; test_event_code?: string } = { eventID: eventId };
+  try {
+    const testCode =
+      (window as any)._pixelInitializedSettings?.metaTestEventCode?.trim() ||
+      (() => {
+        try {
+          const p = new URLSearchParams(window.location.search);
+          return p.get('test_event_code') || p.get('test_event_code_fb') || '';
+        } catch (e) {
+          return '';
+        }
+      })();
+    if (testCode) {
+      options.test_event_code = testCode;
+    }
+  } catch (e) {}
+  return options;
+}
+
+/**
  * Dynamically inject pixel tracking scripts into <head> and initialize
  */
 export function initTrackingScripts(settings: StoreSettings, product?: ProductData | null) {
@@ -458,7 +481,7 @@ export function trackClientPageView() {
 
   // Meta Pixel
   if (window.fbq) {
-    window.fbq('track', 'PageView', {}, { eventID: eventId });
+    window.fbq('track', 'PageView', {}, getMetaEventOptions(eventId));
   }
 
   // TikTok Pixel
@@ -510,7 +533,7 @@ export function trackClientViewContent(product: ProductData) {
         value: price,
         currency: 'BDT',
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
@@ -595,7 +618,7 @@ export function trackClientAddToCart(
         num_items: quantity,
         ...details,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
@@ -729,7 +752,7 @@ export function trackClientInitiateCheckout(
         content_ids: ['COD-PROD-01'],
         ...details,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
@@ -810,7 +833,7 @@ export function trackClientWatchVideo(videoTitle: string, videoUrl?: string, det
         action: 'play_or_open',
         ...details,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
@@ -875,7 +898,7 @@ export function trackClientPageScroll(depthPercent: number, sectionName = 'Landi
         depth: `${depthPercent}%`,
         section: sectionName,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
@@ -939,7 +962,7 @@ export function trackClientScrollDepth(depthPercent: number, sectionName = 'Land
         depth: `${depthPercent}%`,
         section: sectionName,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
@@ -1003,7 +1026,7 @@ export function trackClientTimeOnPage(seconds: number, force = false) {
         seconds,
         time_spent_str: `${seconds} seconds`,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
@@ -1056,7 +1079,7 @@ export function trackClientInternalClick(elementName: string, clickTarget?: stri
         click_target: clickTarget || '',
         ...details,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
@@ -1113,10 +1136,10 @@ export function trackClientOutboundClick(channel: string, outboundUrl?: string, 
         outbound_url: outboundUrl || '',
         ...details,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
     if (channel.toLowerCase().includes('whatsapp') || channel.toLowerCase().includes('call') || channel.toLowerCase().includes('phone')) {
-      window.fbq('track', 'Contact', { channel }, { eventID: `${eventId}_contact` });
+      window.fbq('track', 'Contact', { channel }, getMetaEventOptions(`${eventId}_contact`));
     }
   }
 
@@ -1181,7 +1204,7 @@ export function trackClientPurchase(
         content_ids: ['COD-PROD-01'],
         num_items: order.quantity,
       },
-      { eventID: eventId }
+      getMetaEventOptions(eventId)
     );
   }
 
