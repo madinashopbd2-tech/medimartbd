@@ -140,7 +140,8 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
                       src={videoInfo.embedUrl}
                       title="Product Live Video"
                       className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
                       allowFullScreen
                     />
                   )}
@@ -208,7 +209,8 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
                   src={videoInfo.embedUrl}
                   title="Product Video Demo Full"
                   className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                 />
               )}

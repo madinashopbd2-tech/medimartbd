@@ -103,7 +103,7 @@ export function parseVideoUrl(url?: string): VideoEmbedResult {
     return {
       type: 'youtube',
       isDirectVideo: false,
-      embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1&mute=1&controls=1&enablejsapi=1`,
+      embedUrl: `https://www.youtube.com/embed/${videoId}?rel=0&playsinline=1`,
       rawUrl: trimmed,
       platformName: 'YouTube',
     };

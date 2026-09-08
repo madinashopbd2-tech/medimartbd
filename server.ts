@@ -77,6 +77,10 @@ async function startServer() {
   const app = express();
 
   app.use(express.json());
+  app.use((_req, res, next) => {
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
 
   // API Routes
   app.get('/api/health', (req, res) => {
