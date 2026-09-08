@@ -30,7 +30,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({ product }) => {
   };
 
   return (
-    <section className="py-10 bg-slate-50 border-y border-slate-200">
+    <section id="media-gallery-section" className="py-10 bg-slate-50 border-y border-slate-200">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-8">
           <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest bg-emerald-100 px-3 py-1 rounded-full">

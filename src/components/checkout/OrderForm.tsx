@@ -55,8 +55,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
   const subtotal = unitPrice * quantity;
   
   // Delivery Fee: Inside Dhaka vs Outside Dhaka
-  const insideFee = settings.deliveryFeeInside || 70;
-  const outsideFee = settings.deliveryFeeOutside || 130;
+  const insideFee = typeof settings.deliveryFeeInside === 'number' ? settings.deliveryFeeInside : 0;
+  const outsideFee = typeof settings.deliveryFeeOutside === 'number' ? settings.deliveryFeeOutside : 0;
   const deliveryFee = deliveryLocation === 'inside' ? insideFee : outsideFee;
 
   const grandTotal = Math.max(0, subtotal + deliveryFee - appliedDiscount);
@@ -398,7 +398,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                   </div>
                 </div>
                 <span className="text-sm font-black text-emerald-700 bg-emerald-100/90 px-3 py-1 rounded-lg">
-                  ৳{insideFee}
+                  {insideFee === 0 ? 'ফ্রি ডেলিভারি' : `৳${insideFee}`}
                 </span>
               </button>
 
@@ -426,7 +426,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                   </div>
                 </div>
                 <span className="text-sm font-black text-emerald-700 bg-emerald-100/90 px-3 py-1 rounded-lg">
-                  ৳{outsideFee}
+                  {outsideFee === 0 ? 'ফ্রি ডেলিভারি' : `৳${outsideFee}`}
                 </span>
               </button>
             </div>
@@ -496,7 +496,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             
             <div className="flex justify-between text-slate-600">
               <span>ডেলিভারি চার্জ ({deliveryLocation === 'inside' ? 'ঢাকার ভেতরে' : 'ঢাকার বাইরে'}):</span>
-              <span className="font-semibold text-slate-900">৳{deliveryFee}</span>
+              <span className="font-semibold text-slate-900">
+                {deliveryFee === 0 ? <span className="text-emerald-600 font-bold">ফ্রি (৳0)</span> : `৳${deliveryFee}`}
+              </span>
             </div>
 
             {appliedDiscount > 0 && (

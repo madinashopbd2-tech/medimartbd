@@ -3,15 +3,16 @@ import { MessageCircle, Phone } from 'lucide-react';
 import { trackClientOutboundClick } from '../../lib/marketing/tracking-client';
 
 export const FloatingChatButtons: React.FC = () => {
-  const whatsappNumber = '8801700000000';
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('আসসালামু আলাইকুম, আমি প্রোডাক্ট সম্পর্কে জানতে চাই।')}`;
+  const hotline = '01318149442';
+  const whatsappNumber = '8801318149442';
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('আসসালামু আলাইকুম, আমি কোরিয়ান রেড জিনসেং ক্যাপসুল সম্পর্কে জানতে চাই।')}`;
 
   const handleWhatsAppClick = () => {
     trackClientOutboundClick('WhatsApp', whatsappUrl);
   };
 
   const handleCallClick = () => {
-    trackClientOutboundClick('PhoneCall', `tel:${whatsappNumber}`);
+    trackClientOutboundClick('PhoneCall', `tel:${hotline}`);
   };
 
   return (

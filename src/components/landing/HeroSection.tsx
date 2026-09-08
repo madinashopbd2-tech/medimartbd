@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, Star, ShieldCheck, Truck, Zap, Flame, Sparkles } from 'lucide-react';
+import { ShoppingCart, Star, ShieldCheck, Truck, Zap, Flame, Sparkles, Play } from 'lucide-react';
 import { ProductData, StoreSettings } from '../../types';
 
 interface HeroSectionProps {
@@ -82,17 +82,34 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </div>
             </div>
 
-            {/* CTA Button */}
-            <div className="pt-2">
-              <button
-                onClick={onScrollToCheckout}
-                style={{ backgroundColor: settings.primaryColor || '#059669' }}
-                className="w-full sm:w-auto px-8 py-4 text-white text-lg sm:text-xl font-extrabold rounded-2xl shadow-xl shadow-emerald-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer"
-              >
-                <ShoppingCart className="w-6 h-6 animate-bounce" />
-                <span>{product.customCtaButtonText || 'অর্ডার করতে ক্লিক করুন'}</span>
-                <Zap className="w-5 h-5 text-amber-300" />
-              </button>
+            {/* CTA Button & Video Action */}
+            <div className="pt-2 space-y-3">
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+                <button
+                  onClick={onScrollToCheckout}
+                  style={{ backgroundColor: settings.primaryColor || '#059669' }}
+                  className="w-full sm:w-auto px-8 py-4 text-white text-lg sm:text-xl font-extrabold rounded-2xl shadow-xl shadow-emerald-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer"
+                >
+                  <ShoppingCart className="w-6 h-6 animate-bounce" />
+                  <span>{product.customCtaButtonText || 'অর্ডার করতে ক্লিক করুন'}</span>
+                  <Zap className="w-5 h-5 text-amber-300" />
+                </button>
+
+                {product.videoUrl && (
+                  <button
+                    onClick={() => {
+                      const mediaSection = document.getElementById('media-gallery-section');
+                      if (mediaSection) {
+                        mediaSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    className="w-full sm:w-auto px-6 py-4 bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300 border border-slate-700 hover:border-amber-400/40 text-base font-extrabold rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  >
+                    <Play className="w-5 h-5 fill-current" />
+                    <span>ভিডিও দেখুন</span>
+                  </button>
+                )}
+              </div>
               <p className="text-xs text-slate-400 mt-2.5 flex items-center justify-center lg:justify-start gap-2">
                 <Truck className="w-3.5 h-3.5 text-emerald-400" />
                 {product.customTrustText || 'ক্যাশ অন ডেলিভারি: আগে প্রোডাক্ট দেখুন, তারপর টাকা দিন।'}
