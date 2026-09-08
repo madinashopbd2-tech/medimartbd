@@ -113,7 +113,7 @@ export async function sendMetaCapiEvent(
   const pixelId = (
     process.env.META_PIXEL_ID ||
     config?.pixelId ||
-    '1516207809463394'
+    '933006219330034'
   ).trim();
 
   let accessToken = (

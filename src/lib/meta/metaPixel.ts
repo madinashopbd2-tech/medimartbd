@@ -102,7 +102,7 @@ export function initMetaPixel(pixelId?: string): boolean {
     pixelId ||
     (window as any)._pixelInitializedSettings?.metaPixelId ||
     (import.meta as any).env?.VITE_META_PIXEL_ID ||
-    '1516207809463394'
+    '933006219330034'
   ).toString().trim();
 
   if (!resolvedPixelId) return false;

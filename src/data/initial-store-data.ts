@@ -73,7 +73,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   accentColor: '#d97706',  // Amber 600
   deliveryFeeInside: 70,
   deliveryFeeOutside: 130,
-  metaPixelId: '1516207809463394',
+  metaPixelId: '933006219330034',
   metaCapiToken: '',
   metaTestEventCode: '',
   metaDomainVerification: '',

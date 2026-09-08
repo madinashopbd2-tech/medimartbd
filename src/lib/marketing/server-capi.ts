@@ -534,7 +534,7 @@ export async function dispatchAllServerMarketingEvents(
   payload: MarketingEventPayload
 ) {
   const safeSettings = settings || {};
-  const metaPixelId = process.env.META_PIXEL_ID || safeSettings.metaPixelId || safeSettings.pixelId || '1516207809463394';
+  const metaPixelId = process.env.META_PIXEL_ID || safeSettings.metaPixelId || safeSettings.pixelId || '933006219330034';
   const metaToken = process.env.META_ACCESS_TOKEN || safeSettings.metaCapiToken || safeSettings.metaCapiAccessToken || safeSettings.metaAccessToken || '';
   const metaTestCode = process.env.META_TEST_EVENT_CODE || safeSettings.metaTestEventCode || safeSettings.testEventCode || '';
 
