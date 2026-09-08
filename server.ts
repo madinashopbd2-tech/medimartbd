@@ -253,6 +253,8 @@ async function startServer() {
         userData = {},
         custom_data = {},
         customData = {},
+        test_event_code,
+        testEventCode,
       } = req.body;
 
       const resolvedEventName = event_name || eventName;
@@ -314,10 +316,19 @@ async function startServer() {
         },
       };
 
+      const effectiveTestCode =
+        test_event_code ||
+        testEventCode ||
+        (req.query.test_event_code as string) ||
+        currentSettings.metaTestEventCode ||
+        (currentSettings as any).testEventCode ||
+        process.env.META_TEST_EVENT_CODE ||
+        '';
+
       const result = await sendMetaCapiEvent(capiPayload, {
         pixelId: currentSettings.metaPixelId,
         accessToken: currentSettings.metaCapiToken || (currentSettings as any).metaAccessToken,
-        testEventCode: currentSettings.metaTestEventCode || (currentSettings as any).testEventCode,
+        testEventCode: effectiveTestCode,
       });
 
       return res.json({ success: result.success, result });
@@ -333,10 +344,26 @@ async function startServer() {
   // Direct Server CAPI Event Dispatcher (for PageView, ViewContent, InitiateCheckout, WatchVideo, PageScroll, TimeOnPage, ScrollDepth, InternalClick, OutboundClick)
   app.post('/api/marketing/event', async (req, res) => {
     try {
-      const { eventName, eventId, customData = {}, userData = {}, eventSourceUrl, settings } = req.body;
+      const {
+        eventName,
+        eventId,
+        customData = {},
+        userData = {},
+        eventSourceUrl,
+        settings,
+        testEventCode,
+        test_event_code,
+      } = req.body;
       if (!eventName) {
         return res.status(400).json({ success: false, error: 'eventName is required' });
       }
+
+      const clientTestCode =
+        test_event_code ||
+        testEventCode ||
+        (req.query.test_event_code as string) ||
+        settings?.metaTestEventCode ||
+        settings?.testEventCode;
 
       // Merge client-sent settings with currentSettings
       if (settings && typeof settings === 'object') {
@@ -397,7 +424,12 @@ async function startServer() {
         },
       };
 
-      const result = await dispatchAllServerMarketingEvents(currentSettings, payload);
+      const effectiveSettings = {
+        ...currentSettings,
+        metaTestEventCode: clientTestCode || currentSettings.metaTestEventCode || process.env.META_TEST_EVENT_CODE || '',
+      };
+
+      const result = await dispatchAllServerMarketingEvents(effectiveSettings, payload);
       res.json({ success: true, result });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err?.message || 'Error dispatching marketing event' });

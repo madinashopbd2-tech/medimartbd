@@ -263,6 +263,8 @@ async function sendServerEvent(eventName: string, eventId: string, customData: a
     }
 
     const activeSettings = (window as any)._pixelInitializedSettings || undefined;
+    const metaOptions = getMetaEventOptions(eventId);
+    const activeTestCode = metaOptions.test_event_code;
 
     fetch('/api/marketing/event', {
       method: 'POST',
@@ -272,6 +274,8 @@ async function sendServerEvent(eventName: string, eventId: string, customData: a
         eventId,
         eventSourceUrl: window.location.href,
         settings: activeSettings,
+        testEventCode: activeTestCode || undefined,
+        test_event_code: activeTestCode || undefined,
         customData: {
           utm_source: clickContext.utmSource || undefined,
           utm_medium: clickContext.utmMedium || undefined,

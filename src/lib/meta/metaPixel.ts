@@ -170,6 +170,7 @@ async function sendServerRelay(
     ...userData,
   };
 
+  const testCode = getActiveTestEventCode();
   const payload = {
     event_name: eventName,
     event_id: eventId,
@@ -178,6 +179,7 @@ async function sendServerRelay(
     action_source: 'website' as const,
     user_data: fullUserData,
     custom_data: customData,
+    test_event_code: testCode || undefined,
   };
 
   try {
