@@ -41,6 +41,7 @@ import {
   trackClientScrollDepth, 
   trackClientPageScroll,
   trackClientTimeOnPage,
+  trackClientAddToCart,
   trackClientInitiateCheckout,
   trackClientInternalClick,
   trackClientPurchase 
@@ -229,6 +230,11 @@ export default function App() {
         const rect = formEl.getBoundingClientRect();
         if (rect.top <= window.innerHeight * 0.85) {
           formReached = true;
+          if (product) {
+            const price = product.offerPrice || product.regularPrice;
+            trackClientAddToCart(product.title, price, 1, { trigger: 'ScrollToForm' });
+            trackClientInitiateCheckout(product.title, price, { trigger: 'ScrollToForm' }, undefined, true);
+          }
         }
       }
     };
@@ -242,7 +248,9 @@ export default function App() {
 
   const scrollToCheckout = (source = 'CTA_Button') => {
     if (product) {
-      trackClientInitiateCheckout(product.title, product.offerPrice || product.regularPrice, { source });
+      const price = product.offerPrice || product.regularPrice;
+      trackClientAddToCart(product.title, price, 1, { source });
+      trackClientInitiateCheckout(product.title, price, { source }, undefined, true);
       trackClientInternalClick(source, 'checkout-form-section');
     }
     const el = document.getElementById('checkout-form-section') || document.getElementById('order-form');

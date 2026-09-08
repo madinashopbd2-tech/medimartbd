@@ -13,6 +13,7 @@ import {
 } from './src/data/initial-store-data';
 import { createOrderAction } from './src/app/actions/order-actions';
 import { dispatchAllServerMarketingEvents, marketingLogsMemory } from './src/lib/marketing/server-capi';
+import { sendMetaCapiEvent } from './src/lib/meta/metaCapi';
 import { ProductData, StoreSettings, OrderData, ReviewData, FaqData, CouponData, BlacklistEntry, IncompleteOrderData } from './src/types';
 
 // Derive __dirname safely for CJS/ESM compatibility
@@ -234,6 +235,99 @@ async function startServer() {
   // Get Marketing Logs for Admin Terminal
   app.get('/api/marketing-logs', (req, res) => {
     res.json({ logs: marketingLogsMemory });
+  });
+
+  // Dedicated Meta Conversions API (CAPI) Endpoint
+  app.post('/api/meta/events', async (req, res) => {
+    try {
+      const {
+        event_name,
+        eventName,
+        event_id,
+        eventId,
+        event_time,
+        eventSourceUrl,
+        event_source_url,
+        action_source = 'website',
+        user_data = {},
+        userData = {},
+        custom_data = {},
+        customData = {},
+      } = req.body;
+
+      const resolvedEventName = event_name || eventName;
+      const resolvedEventId = event_id || eventId;
+
+      if (!resolvedEventName || !resolvedEventId) {
+        return res.status(400).json({
+          success: false,
+          error: 'event_name and event_id are required for deduplication',
+        });
+      }
+
+      // 1. Resolve real client IP across Cloudflare, Nginx, and direct proxies
+      const rawIp =
+        (req.headers['cf-connecting-ip'] as string) ||
+        (req.headers['x-real-ip'] as string) ||
+        (req.headers['x-forwarded-for'] as string) ||
+        req.socket.remoteAddress ||
+        '';
+      const clientIp = rawIp.split(',')[0].trim();
+      const userAgent = (req.headers['user-agent'] as string) || 'Mozilla/5.0';
+
+      // 2. Parse HTTP request cookies for backup _fbp and _fbc
+      const cookieHeader = req.headers.cookie || '';
+      const requestCookies: Record<string, string> = {};
+      if (cookieHeader) {
+        cookieHeader.split(';').forEach((cookie) => {
+          const parts = cookie.split('=');
+          const name = parts.shift()?.trim();
+          if (name) {
+            requestCookies[name] = decodeURIComponent(parts.join('=').trim().replace(/^"|"$/g, ''));
+          }
+        });
+      }
+      const cookieFbp = requestCookies['_fbp'] || '';
+      const cookieFbc = requestCookies['_fbc'] || '';
+
+      const mergedUserData = {
+        ...userData,
+        ...user_data,
+        ipAddress: clientIp || (user_data.ipAddress || userData.ipAddress),
+        userAgent: userAgent || (user_data.userAgent || userData.userAgent),
+        fbp: user_data.fbp || userData.fbp || cookieFbp || undefined,
+        fbc: user_data.fbc || userData.fbc || cookieFbc || undefined,
+      };
+
+      const defaultDomain = req.headers.host ? `https://${req.headers.host}` : 'https://malaysianbd.shop';
+
+      const capiPayload = {
+        event_name: resolvedEventName,
+        event_id: resolvedEventId,
+        event_time: event_time || Math.floor(Date.now() / 1000),
+        event_source_url: event_source_url || eventSourceUrl || req.headers.referer || defaultDomain,
+        action_source,
+        user_data: mergedUserData,
+        custom_data: {
+          ...customData,
+          ...custom_data,
+        },
+      };
+
+      const result = await sendMetaCapiEvent(capiPayload, {
+        pixelId: currentSettings.metaPixelId,
+        accessToken: currentSettings.metaCapiToken || (currentSettings as any).metaAccessToken,
+        testEventCode: currentSettings.metaTestEventCode || (currentSettings as any).testEventCode,
+      });
+
+      return res.json({ success: result.success, result });
+    } catch (err: any) {
+      console.error('[Meta CAPI Route Error]:', err);
+      return res.status(200).json({
+        success: false,
+        error: err?.message || 'Internal error handling Meta CAPI event',
+      });
+    }
   });
 
   // Direct Server CAPI Event Dispatcher (for PageView, ViewContent, InitiateCheckout, WatchVideo, PageScroll, TimeOnPage, ScrollDepth, InternalClick, OutboundClick)

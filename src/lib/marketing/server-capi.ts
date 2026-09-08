@@ -130,7 +130,7 @@ export async function sendMetaCapiEvent(
   const fbp = userData.fbp?.trim() || undefined;
   let fbc = userData.fbc?.trim() || undefined;
   if (!fbc && userData.fbclid?.trim()) {
-    fbc = `fb.1.${Math.floor(Date.now() / 1000)}.${userData.fbclid.trim()}`;
+    fbc = `fb.1.${Date.now()}.${userData.fbclid.trim()}`;
   }
   const hashedExternalId = userData.externalId?.trim() ? hashData(userData.externalId.trim()) : undefined;
 
@@ -152,11 +152,8 @@ export async function sendMetaCapiEvent(
     metaUserData.em = [hashedEmail];
   }
 
-  // Country code must be SHA-256 hashed lowercase 2-letter code ('bd')
-  // Only send when customer demographic or contact signals exist
-  if (hashedPhone || hashedCity || hashedName || hashedEmail) {
-    metaUserData.country = [hashData('bd')];
-  }
+  // Country code: SHA-256 hashed lowercase 2-letter code ('bd') for Bangladesh traffic
+  metaUserData.country = [hashData('bd')];
 
   // First-party cookie parameters (never hashed)
   if (fbp) {
@@ -537,9 +534,9 @@ export async function dispatchAllServerMarketingEvents(
   payload: MarketingEventPayload
 ) {
   const safeSettings = settings || {};
-  const metaPixelId = safeSettings.metaPixelId || safeSettings.pixelId || '';
-  const metaToken = safeSettings.metaCapiToken || safeSettings.metaCapiAccessToken || safeSettings.metaAccessToken || '';
-  const metaTestCode = safeSettings.metaTestEventCode || safeSettings.testEventCode || '';
+  const metaPixelId = process.env.META_PIXEL_ID || safeSettings.metaPixelId || safeSettings.pixelId || '1516207809463394';
+  const metaToken = process.env.META_ACCESS_TOKEN || safeSettings.metaCapiToken || safeSettings.metaCapiAccessToken || safeSettings.metaAccessToken || '';
+  const metaTestCode = process.env.META_TEST_EVENT_CODE || safeSettings.metaTestEventCode || safeSettings.testEventCode || '';
 
   const metaPromise = sendMetaCapiEvent(
     metaPixelId,

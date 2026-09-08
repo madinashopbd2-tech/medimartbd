@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { BANGLADESH_DISTRICTS } from '../../data/bangladesh-locations';
 import { ProductData, StoreSettings, OrderData } from '../../types';
-import { trackClientInitiateCheckout, trackClientInternalClick, getMarketingClickContext } from '../../lib/marketing/tracking-client';
+import { trackClientAddToCart, trackClientInitiateCheckout, trackClientInternalClick, getMarketingClickContext } from '../../lib/marketing/tracking-client';
 import { getOrCreateDeviceId } from '../../lib/device-fingerprint';
 
 interface OrderFormProps {
@@ -137,12 +137,13 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     const district = deliveryLocation === 'inside' ? 'Dhaka' : 'Outside Dhaka';
     const upazila = deliveryLocation === 'inside' ? 'Dhaka City' : 'Outside Dhaka';
 
-    // Trigger InitiateCheckout pixel event with customer user data
+    // Trigger InitiateCheckout pixel event with customer user data (forced)
     trackClientInitiateCheckout(
       product.title,
       grandTotal,
       { trigger: 'FormSubmit' },
-      { phone: cleanPhone, name: customerName.trim(), district }
+      { phone: cleanPhone, name: customerName.trim(), district },
+      true
     );
 
     const clickContext = getMarketingClickContext();
@@ -250,6 +251,54 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Package / Quantity Selection */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-emerald-600" />
+              প্যাকেজ / পরিমাণ পছন্দ করুন <span className="text-rose-500">*</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { qty: 1, label: '১ পিস', tag: 'বেসিক' },
+                { qty: 2, label: '২ পিস', tag: 'জনপ্রিয়' },
+                { qty: 3, label: '৩ পিস', tag: 'সেরা অফার' },
+              ].map((item) => {
+                const isSelected = quantity === item.qty;
+                const pkgPrice = unitPrice * item.qty;
+                return (
+                  <button
+                    key={item.qty}
+                    type="button"
+                    onClick={() => {
+                      setQuantity(item.qty);
+                      trackClientAddToCart(product.title, pkgPrice, item.qty, { package: `${item.qty}_pcs` });
+                      trackClientInitiateCheckout(
+                        product.title,
+                        pkgPrice + deliveryFee,
+                        { package: `${item.qty}_pcs` },
+                        { phone, name: customerName, district: deliveryLocation === 'inside' ? 'Dhaka' : 'Outside Dhaka' },
+                        true
+                      );
+                    }}
+                    className={`py-3 px-2 rounded-xl border text-center transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-emerald-600 bg-emerald-50/90 ring-2 ring-emerald-500/30 text-emerald-950 font-bold shadow-xs'
+                        : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <div className="text-xs font-bold">{item.label}</div>
+                    <div className="text-sm font-black text-emerald-700">৳{pkgPrice}</div>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-1 inline-block ${
+                      isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {item.tag}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Customer Personal Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
@@ -261,6 +310,16 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 type="text"
                 required
                 value={customerName}
+                onFocus={() => {
+                  trackClientAddToCart(product.title, grandTotal, quantity, { trigger: 'NameFocus' });
+                  trackClientInitiateCheckout(
+                    product.title,
+                    grandTotal,
+                    { trigger: 'NameFocus' },
+                    { phone, name: customerName, district: deliveryLocation === 'inside' ? 'Dhaka' : 'Outside Dhaka' },
+                    true
+                  );
+                }}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="যেমন: মোঃ সাকিব হাসান"
                 className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-900 text-sm"
@@ -276,7 +335,29 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 type="tel"
                 required
                 value={phone}
+                onFocus={() => {
+                  trackClientAddToCart(product.title, grandTotal, quantity, { trigger: 'PhoneFocus' });
+                  trackClientInitiateCheckout(
+                    product.title,
+                    grandTotal,
+                    { trigger: 'PhoneFocus' },
+                    { phone, name: customerName, district: deliveryLocation === 'inside' ? 'Dhaka' : 'Outside Dhaka' },
+                    true
+                  );
+                }}
                 onChange={(e) => setPhone(e.target.value)}
+                onBlur={() => {
+                  const clean = phone.replace(/\s+/g, '');
+                  if (clean.length >= 11) {
+                    trackClientInitiateCheckout(
+                      product.title,
+                      grandTotal,
+                      { trigger: 'PhoneBlur' },
+                      { phone: clean, name: customerName, district: deliveryLocation === 'inside' ? 'Dhaka' : 'Outside Dhaka' },
+                      true
+                    );
+                  }
+                }}
                 placeholder="যেমন: 01712345678"
                 className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-900 text-sm font-medium"
               />

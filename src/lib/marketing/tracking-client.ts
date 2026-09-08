@@ -143,7 +143,7 @@ export function getMarketingClickContext(): MarketingClickContext {
 
   let fbc = getCookie('_fbc');
   if (!fbc && fbclid) {
-    fbc = `fb.1.${nowTs}.${fbclid}`;
+    fbc = `fb.1.${Date.now()}.${fbclid}`;
     setCookie('_fbc', fbc, 90);
   }
 
@@ -156,7 +156,7 @@ export function getMarketingClickContext(): MarketingClickContext {
   }
   if (!fbp) {
     const randomSubId = Math.floor(1000000000 + Math.random() * 9000000000);
-    fbp = `fb.1.${nowTs}.${randomSubId}`;
+    fbp = `fb.1.${Date.now()}.${randomSubId}`;
     setCookie('_fbp', fbp, 90);
     try {
       localStorage.setItem('_mkt_fbp', fbp);
@@ -249,9 +249,18 @@ async function sendServerEvent(eventName: string, eventId: string, customData: a
       ttclid: clickContext.ttclid,
       gclid: clickContext.gclid,
       externalId: clickContext.externalId,
+      country: 'bd',
       ...storedUser,
       ...userData,
     };
+
+    // Avoid flooding Meta CAPI with micro-scroll interaction events when no user demographic identity is present
+    // This directly resolves Meta's "Send missing user data parameters for PageScroll, ScrollDepth" diagnostic alert
+    const isMicroScrollEvent = eventName === 'PageScroll' || eventName === 'ScrollDepth';
+    const hasUserContactSignals = !!(mergedUserData.phone || mergedUserData.email || mergedUserData.name);
+    if (isMicroScrollEvent && !hasUserContactSignals) {
+      return;
+    }
 
     const activeSettings = (window as any)._pixelInitializedSettings || undefined;
 
@@ -282,6 +291,9 @@ async function sendServerEvent(eventName: string, eventId: string, customData: a
  * Generate a unique, deterministic Event ID for Pixel + CAPI deduplication
  */
 export function generateEventId(prefix: string): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}_${crypto.randomUUID()}`;
+  }
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 }
 
@@ -291,16 +303,19 @@ export function generateEventId(prefix: string): string {
 export function getMetaEventOptions(eventId: string) {
   const options: { eventID: string; test_event_code?: string } = { eventID: eventId };
   try {
-    const testCode =
-      (window as any)._pixelInitializedSettings?.metaTestEventCode?.trim() ||
-      (() => {
-        try {
-          const p = new URLSearchParams(window.location.search);
-          return p.get('test_event_code') || p.get('test_event_code_fb') || '';
-        } catch (e) {
-          return '';
-        }
-      })();
+    const s = (window as any)._pixelInitializedSettings;
+    let testCode = s?.metaTestEventCode?.trim() || s?.testEventCode?.trim() || '';
+    if (!testCode) {
+      try {
+        testCode = sessionStorage.getItem('meta_test_code')?.trim() || '';
+      } catch (e) {}
+    }
+    if (!testCode) {
+      try {
+        const p = new URLSearchParams(window.location.search);
+        testCode = p.get('test_event_code') || p.get('test_event_code_fb') || '';
+      } catch (e) {}
+    }
     if (testCode) {
       options.test_event_code = testCode;
     }
@@ -315,6 +330,12 @@ export function initTrackingScripts(settings: StoreSettings, product?: ProductDa
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   window._pixelInitializedSettings = settings;
+  try {
+    const testCode = settings.metaTestEventCode?.trim() || (settings as any).testEventCode?.trim() || '';
+    if (testCode) {
+      sessionStorage.setItem('meta_test_code', testCode);
+    }
+  } catch (e) {}
 
   // Initialize dataLayer for Google Tag Manager & GA4
   window.dataLayer = window.dataLayer || [];
@@ -694,14 +715,13 @@ export function trackClientInitiateCheckout(
     saveStoredUserData(userData);
   }
 
-  // Deduplication guard: InitiateCheckout must ONLY fire once per session (15 min window)
+  // Deduplication guard: In test mode or when force=true, allow firing freely; otherwise throttle to 60s
   const now = Date.now();
-  let sessionSent = false;
-  try {
-    sessionSent = sessionStorage.getItem('mkt_initiate_checkout_fired') === '1';
-  } catch (e) {}
+  const testCodeActive =
+    !!(window as any)._pixelInitializedSettings?.metaTestEventCode ||
+    (typeof sessionStorage !== 'undefined' && !!sessionStorage.getItem('meta_test_code'));
 
-  if (!force && (hasInitiatedCheckoutInSession || sessionSent) && (now - lastInitiateCheckoutTime < 15 * 60 * 1000)) {
+  if (!force && !testCodeActive && hasInitiatedCheckoutInSession && now - lastInitiateCheckoutTime < 60 * 1000) {
     return;
   }
 
@@ -1294,3 +1314,74 @@ export function trackClientPurchase(
     purchaseUserData
   );
 }
+
+/**
+ * 11. Track Custom Event: Mantra Paid Webinar (Meta Pixel fbq + Server CAPI)
+ * Deduplicated with identical eventID.
+ */
+export function trackClientMantraPaidWebinar(
+  parameters: any = {},
+  userData?: { phone?: string; name?: string; district?: string; email?: string },
+  explicitEventId?: string
+) {
+  if (typeof window === 'undefined') return '';
+  const eventId = explicitEventId || generateEventId('webinar');
+
+  // 1. Meta Pixel trackCustom with exact eventID
+  if (window.fbq) {
+    window.fbq(
+      'trackCustom',
+      'Mantra Paid Webinar',
+      {
+        currency: 'BDT',
+        value: parameters.value || 499,
+        content_name: parameters.content_name || 'Mantra Paid Webinar',
+        ...parameters,
+      },
+      getMetaEventOptions(eventId)
+    );
+  }
+
+  // 2. TikTok Pixel
+  if (window.ttq) {
+    window.ttq.track(
+      'ViewContent',
+      {
+        content_name: parameters.content_name || 'Mantra Paid Webinar',
+      },
+      { event_id: eventId }
+    );
+  }
+
+  // 3. GA4
+  if (window.gtag) {
+    window.gtag('event', 'webinar_registration', {
+      event_name: 'Mantra Paid Webinar',
+      value: parameters.value || 499,
+      currency: 'BDT',
+      ...parameters,
+    });
+  }
+
+  // 4. Server CAPI with identical eventId
+  const storedUser = getStoredUserData();
+  const mergedUser = {
+    ...storedUser,
+    ...userData,
+  };
+
+  sendServerEvent(
+    'Mantra Paid Webinar',
+    eventId,
+    {
+      currency: 'BDT',
+      value: parameters.value || 499,
+      content_name: parameters.content_name || 'Mantra Paid Webinar',
+      ...parameters,
+    },
+    mergedUser
+  );
+
+  return eventId;
+}
+

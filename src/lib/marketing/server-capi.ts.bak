@@ -127,31 +127,77 @@ export async function sendMetaCapiEvent(
   const hashedEmail = hashData(userData.email || '');
 
   // Meta First-Party Cookie IDs: _fbp and _fbc
-  const fbp = userData.fbp || undefined;
-  let fbc = userData.fbc || undefined;
-  if (!fbc && userData.fbclid) {
-    fbc = `fb.1.${Math.floor(Date.now() / 1000)}.${userData.fbclid}`;
+  const fbp = userData.fbp?.trim() || undefined;
+  let fbc = userData.fbc?.trim() || undefined;
+  if (!fbc && userData.fbclid?.trim()) {
+    fbc = `fb.1.${Math.floor(Date.now() / 1000)}.${userData.fbclid.trim()}`;
   }
-  const hashedExternalId = userData.externalId ? hashData(userData.externalId) : undefined;
+  const hashedExternalId = userData.externalId?.trim() ? hashData(userData.externalId.trim()) : undefined;
+
+  // Build clean, compliant user_data object for Meta Graph API
+  // Rule: Meta CAPI explicitly penalizes empty arrays (e.g. ph: []).
+  // Parameters must ONLY be included if they have valid non-empty hashed values.
+  const metaUserData: Record<string, any> = {};
+
+  if (hashedPhone) {
+    metaUserData.ph = [hashedPhone];
+  }
+  if (hashedName) {
+    metaUserData.fn = [hashedName];
+  }
+  if (hashedCity) {
+    metaUserData.ct = [hashedCity];
+  }
+  if (hashedEmail) {
+    metaUserData.em = [hashedEmail];
+  }
+
+  // Country code must be SHA-256 hashed lowercase 2-letter code ('bd')
+  // Only send when customer demographic or contact signals exist
+  if (hashedPhone || hashedCity || hashedName || hashedEmail) {
+    metaUserData.country = [hashData('bd')];
+  }
+
+  // First-party cookie parameters (never hashed)
+  if (fbp) {
+    metaUserData.fbp = fbp;
+  }
+  if (fbc) {
+    metaUserData.fbc = fbc;
+  }
+
+  // External ID (hashed array of strings)
+  if (hashedExternalId) {
+    metaUserData.external_id = [hashedExternalId];
+  }
+
+  // Client IP address: Meta requires valid public IP. Omit loopback / private IPs (127.0.0.1, ::1)
+  const clientIp = userData.ipAddress?.trim();
+  const isPrivateIp =
+    !clientIp ||
+    clientIp === '127.0.0.1' ||
+    clientIp === '::1' ||
+    clientIp.startsWith('::ffff:127.') ||
+    clientIp.startsWith('10.') ||
+    clientIp.startsWith('192.168.') ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(clientIp);
+
+  if (clientIp && !isPrivateIp) {
+    metaUserData.client_ip_address = clientIp;
+  }
+
+  // Client user agent
+  if (userData.userAgent?.trim()) {
+    metaUserData.client_user_agent = userData.userAgent.trim();
+  }
 
   const eventObject: any = {
     event_name: eventName,
     event_time: eventTime || Math.floor(Date.now() / 1000),
     event_id: eventId,
-    event_source_url: eventSourceUrl || 'https://my-cod-store.com',
+    event_source_url: eventSourceUrl || 'https://malaysianbd.shop',
     action_source: 'website',
-    user_data: {
-      ph: hashedPhone ? [hashedPhone] : [],
-      fn: hashedName ? [hashedName] : [],
-      ct: hashedCity ? [hashedCity] : [],
-      em: hashedEmail ? [hashedEmail] : [],
-      country: ['bd'],
-      client_ip_address: userData.ipAddress || '127.0.0.1',
-      client_user_agent: userData.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      ...(fbp ? { fbp } : {}),
-      ...(fbc ? { fbc } : {}),
-      ...(hashedExternalId ? { external_id: hashedExternalId } : {}),
-    },
+    user_data: metaUserData,
     custom_data: {
       currency: customData.currency || 'BDT',
       value: customData.value !== undefined ? customData.value : undefined,
@@ -182,30 +228,72 @@ export async function sendMetaCapiEvent(
 
   const summaryStr = `Val: ৳${customData.value}, EventID: ${eventId}, User: ${userData.name || 'Anon'}`;
 
-  if (!pixelId || !accessToken) {
+  const cleanPixelId = (pixelId || '').trim();
+  let cleanAccessToken = (accessToken || '').trim();
+
+  // Sanitize access token: strip quotes, newlines, tabs, spaces, and 'Bearer ' prefix
+  cleanAccessToken = cleanAccessToken.replace(/^["']|["']$/g, '').trim();
+  if (cleanAccessToken.toLowerCase().startsWith('bearer ')) {
+    cleanAccessToken = cleanAccessToken.slice(7).trim();
+  }
+  cleanAccessToken = cleanAccessToken.replace(/[\r\n\t\s]+/g, '');
+
+  const cleanTestCode = (testEventCode || '').trim().replace(/[\r\n\t\s]+/g, '');
+
+  // Check if token is missing or obvious placeholder/test text
+  const isDummyToken =
+    !cleanAccessToken ||
+    cleanAccessToken.length < 35 ||
+    cleanAccessToken.toLowerCase().includes('dummy') ||
+    cleanAccessToken.toLowerCase().includes('demo') ||
+    cleanAccessToken.toLowerCase().endsWith('test');
+
+  if (!cleanPixelId || isDummyToken) {
     const simLog = addMarketingLog({
       platform: 'Meta CAPI',
       eventId,
       eventName,
       status: 'SIMULATED',
       statusCode: 200,
-      responseMessage: 'Simulated Meta CAPI (Set Meta Pixel ID & Access Token in Settings to enable live dispatch)',
+      responseMessage: !cleanAccessToken
+        ? 'Simulated Meta CAPI (Meta Pixel ID ও Access Token সেট করুন)'
+        : 'Simulated Meta CAPI (সঠিক দীর্ঘ Access Token প্রদান করুন)',
       payloadSummary: summaryStr,
       rawPayload: formattedPayload,
     });
     return { success: true, log: simLog };
   }
 
+  // Set access token and test event code in payload
+  formattedPayload.access_token = cleanAccessToken;
+  if (cleanTestCode) {
+    formattedPayload.test_event_code = cleanTestCode;
+  }
+
   try {
-    const url = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v19.0/${cleanPixelId}/events`;
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(formattedPayload),
     });
 
-    const resData = await response.json();
-    const isOk = response.ok;
+    const resData: any = await response.json();
+    const isOk = response.ok && !resData.error;
+
+    let responseMsg = '';
+    if (isOk) {
+      responseMsg = `Events Received: ${resData.events_received || 1}`;
+    } else if (resData?.error?.code === 190) {
+      responseMsg = `ইনভ্যালিড মেটা টোকেন (OAuth 190): মেটা ইভেন্ট ম্যানেজার থেকে নতুন Access Token জেনারেট করে সেভ করুন।`;
+    } else {
+      responseMsg = resData?.error?.message || JSON.stringify(resData);
+    }
+
+    console.log(`[Meta CAPI] Dispatch ${eventName} [${eventId}] -> HTTP ${response.status} (${isOk ? 'Success' : responseMsg})`);
 
     const log = addMarketingLog({
       platform: 'Meta CAPI',
@@ -213,13 +301,14 @@ export async function sendMetaCapiEvent(
       eventName,
       status: isOk ? 'SUCCESS' : 'FAILED',
       statusCode: response.status,
-      responseMessage: isOk ? `Events Received: ${resData.events_received || 1}` : JSON.stringify(resData.error || resData),
+      responseMessage: responseMsg,
       payloadSummary: summaryStr,
       rawPayload: formattedPayload,
     });
 
     return { success: isOk, log };
   } catch (err: any) {
+    console.warn(`[Meta CAPI Network Error] ${err?.message || err}`);
     const log = addMarketingLog({
       platform: 'Meta CAPI',
       eventId,
@@ -265,7 +354,7 @@ export async function sendTikTokEventsApi(
         user: {
           phone_number: hashedPhone || undefined,
           email: hashedEmail || undefined,
-          ip: userData.ipAddress || '127.0.0.1',
+          ip: userData.ipAddress && !userData.ipAddress.startsWith('127.') && userData.ipAddress !== '::1' ? userData.ipAddress : undefined,
           user_agent: userData.userAgent || 'Mozilla/5.0',
           ttclid: userData.ttclid || undefined,
           external_id: userData.externalId ? hashData(userData.externalId) : undefined,
@@ -447,23 +536,28 @@ export async function dispatchAllServerMarketingEvents(
   settings: any,
   payload: MarketingEventPayload
 ) {
+  const safeSettings = settings || {};
+  const metaPixelId = safeSettings.metaPixelId || safeSettings.pixelId || '';
+  const metaToken = safeSettings.metaCapiToken || safeSettings.metaCapiAccessToken || safeSettings.metaAccessToken || '';
+  const metaTestCode = safeSettings.metaTestEventCode || safeSettings.testEventCode || '';
+
   const metaPromise = sendMetaCapiEvent(
-    settings.metaPixelId,
-    settings.metaCapiToken,
+    metaPixelId,
+    metaToken,
     payload,
-    settings.metaTestEventCode
+    metaTestCode
   );
 
   const tikTokPromise = sendTikTokEventsApi(
-    settings.tikTokPixelId,
-    settings.tikTokAccessToken,
+    safeSettings.tikTokPixelId || safeSettings.ttPixelId || '',
+    safeSettings.tikTokAccessToken || safeSettings.tikTokEventsApiToken || '',
     payload,
-    settings.tikTokTestEventCode
+    safeSettings.tikTokTestEventCode || ''
   );
 
   const ga4Promise = sendGa4MeasurementApi(
-    settings.gaMeasurementId,
-    settings.gaApiSecret,
+    safeSettings.gaMeasurementId || '',
+    safeSettings.gaApiSecret || '',
     payload
   );
 
